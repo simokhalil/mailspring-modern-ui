@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "target": "es2019",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "lib": ["es2019", "dom"],
+    "inlineSourceMap": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "typeRoots": ["./types/", "./node_modules/@types/"],
+    "types": ["mailspring", "node"]
+  },
+  "include": ["src/**/*"]
+}

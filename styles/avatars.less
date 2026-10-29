@@ -1,0 +1,117 @@
+// Avatars (src/components/Avatar.tsx, ThreadAvatar.tsx)
+
+.modern-ui-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: @modern-ui-avatar-narrow;
+  height: @modern-ui-avatar-narrow;
+  border-radius: 50%;
+  overflow: hidden;
+  font-family: @modern-ui-font;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.modern-ui-thread-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+// Other plugins' ThreadListIcon components, re-rendered for the narrow layout
+// (see ThreadAvatar#renderOtherIcons): a small chip on the avatar's corner.
+.modern-ui-thread-avatar__extras {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: flex;
+  align-items: center;
+  border-radius: 9px;
+  background: @modern-ui-surface;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// ---- Mailspring internals: thread list rows -------------------------------
+// Markup from thread-list/lib/thread-list-columns.tsx; base sizes from
+// thread-list/styles/thread-list.less.
+
+// Narrow rows (split view). The icons column normally stacks the unread/star
+// icon, injected icons and Gmail's importance marker in a 25px column. With an
+// avatar it becomes a 2-column grid: status icons in a thin lane on the left,
+// the avatar vertically centered on the right.
+.thread-list-narrow .icons-column:has(> .thread-injected-icons .modern-ui-thread-avatar) {
+  display: grid;
+  grid-template-columns: 14px auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  align-content: center;
+  align-self: center;
+  column-gap: 6px;
+  width: auto;
+  margin-left: -4px;
+  margin-right: 12px;
+
+  > .thread-icon {
+    grid-column: 1;
+    grid-row: 1;
+    width: 14px;
+    height: 18px;
+    margin: 0;
+    background-size: 11px;
+  }
+
+  > .mail-important-icon {
+    grid-column: 1;
+    grid-row: 2;
+    float: none;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    padding: 0;
+    background-size: 12px;
+  }
+
+  > .thread-injected-icons {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+// Wide rows (list layout, 36px high): a smaller avatar after the star column's
+// icons. That layout renders every ThreadListIcon component itself, so the
+// copies inside the avatar are hidden.
+.thread-list-wide {
+  .modern-ui-thread-avatar {
+    margin: 0 6px 0 2px;
+  }
+  .modern-ui-avatar {
+    width: @modern-ui-avatar-wide;
+    height: @modern-ui-avatar-wide;
+    font-size: 10px;
+  }
+  .modern-ui-thread-avatar__extras {
+    display: none;
+  }
+}
+
+// Draft-only and multi-select states keep the same geometry: nothing here
+// depends on .unread or .selected, so read and unread rows line up.

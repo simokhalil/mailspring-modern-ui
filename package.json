@@ -1,0 +1,38 @@
+{
+  "name": "mailspring-modern-ui",
+  "displayName": "Modern UI",
+  "main": "./lib/main",
+  "version": "1.0.0",
+  "description": "Airmail-inspired account rail, contact avatars, folder title and a Delete action in new-mail notifications for Mailspring.",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf lib",
+    "rebuild": "npm run clean && npm run build",
+    "lint:less": "lessc --lint styles/index.less",
+    "test": "npm run build && node --test test/*.test.js",
+    "verify": "npm run rebuild && npm run lint:less && node --test test/*.test.js && node scripts/verify-package.js",
+    "install-plugin": "sh scripts/install.sh",
+    "uninstall-plugin": "sh scripts/uninstall.sh"
+  },
+  "engines": {
+    "mailspring": ">=1.26.0"
+  },
+  "windowTypes": {
+    "default": true
+  },
+  "syncInit": true,
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^17.0.93",
+    "less": "3.13.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-test-renderer": "^17.0.2",
+    "typescript": "^5.9.3"
+  },
+  "license": "MIT"
+}

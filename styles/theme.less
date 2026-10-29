@@ -1,0 +1,267 @@
+// Modern UI colors: dark toolbar, sidebar and rail; light list and reader.
+//
+// Every rule is scoped under body.modern-ui-theme, which src/main.ts adds while
+// the `theme` setting is on. The extra class also outranks the active theme's
+// selectors (themes load after plugins), without !important except where the
+// stock theme uses it. The composer window never loads this plugin, and inline
+// reply composers are left alone.
+//
+// Mailspring internals targeted here (markup from app/src/sheet-toolbar.tsx,
+// app/src/sheet.tsx, account-sidebar, thread-list, thread-search, message-list;
+// stock values from static/style/workspace.less and ui-darkside):
+//   .sheet-toolbar, .sheet-toolbar-container, .toolbar-<Column>, .btn-toolbar,
+//   .thread-search-bar, .selection-bar, .column-<Column>, .account-sidebar,
+//   .outline-view .item, .item-count-box, .list-tabular-item, .thread-list,
+//   #message-list.
+
+body.modern-ui-theme {
+  // ---- Global toolbar --------------------------------------------------------
+  // Opaque on purpose: .sheet-toolbar has no background of its own, so a
+  // translucent border shows the light window background through it.
+  .sheet-toolbar {
+    background: @modern-ui-header-bg;
+    border-bottom: 1px solid @modern-ui-header-edge;
+  }
+
+  .sheet-toolbar .sheet-toolbar-container,
+  .sheet-toolbar-container {
+    background: @modern-ui-header-bg;
+    background-image: none;
+    box-shadow: none;
+    color: @modern-ui-on-dark;
+  }
+
+  // Per-column toolbars are transparent so the bar reads as one surface.
+  .sheet-toolbar-container {
+    .toolbar-RootSidebar,
+    .toolbar-ThreadList,
+    .toolbar-MessageList,
+    .toolbar-MessageListSidebar,
+    .toolbar-Center {
+      background: transparent;
+      border-color: transparent;
+    }
+    .item-container .window-title {
+      color: @modern-ui-on-dark-muted;
+    }
+  }
+
+  // Flat buttons: no outline, the icon brightens and a soft tile appears on
+  // hover. On macOS the pill outline is drawn by the .button-group container
+  // (static/style/workspace.less, :where(body.platform-darwin)), so it is
+  // cleared along with the buttons' own fill, edge and separators.
+  .sheet-toolbar .button-group {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    gap: 2px;
+  }
+
+  .sheet-toolbar .btn.btn-toolbar,
+  .sheet-toolbar .btn-toolbar,
+  .sheet-toolbar .button-group .btn.btn-toolbar,
+  .sheet-toolbar .button-group .btn.btn-toolbar:not(:first-child) {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-radius: 7px;
+    color: @modern-ui-on-dark-muted;
+    opacity: 1;
+    transition: background-color 120ms ease-out;
+
+    img.content-mask {
+      background-color: @modern-ui-on-dark-muted;
+      opacity: 1;
+      transition: background-color 120ms ease-out;
+    }
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      img.content-mask {
+        background-color: #ffffff;
+      }
+    }
+    &:active,
+    &.selected {
+      background: rgba(255, 255, 255, 0.16);
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px fade(@modern-ui-accent, 60%);
+    }
+    &:disabled,
+    &.disabled,
+    &.btn-disabled {
+      opacity: 0.35;
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+
+  // List-mode selection bar ("3 selected") drawn over the toolbar.
+  .sheet-toolbar .selection-bar .inner,
+  .sheet-toolbar .selection-bar .absolute {
+    background: @modern-ui-header-bg;
+    color: @modern-ui-on-dark;
+  }
+
+  // Search field on the dark bar. The suggestions popup stays light.
+  .sheet-toolbar .thread-search-bar {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    box-shadow: none;
+    color: @modern-ui-on-dark;
+
+    &.placeholder {
+      color: @modern-ui-on-dark-muted;
+    }
+    .search-accessory img.content-mask,
+    img.content-mask {
+      background-color: @modern-ui-on-dark-muted;
+    }
+    &:focus-within {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: fade(@modern-ui-accent, 70%);
+    }
+    .suggestions {
+      color: @modern-ui-text;
+    }
+  }
+
+  // ---- Folder sidebar --------------------------------------------------------
+  .column-RootSidebar,
+  .account-sidebar {
+    background-color: @modern-ui-sidebar-bg;
+  }
+
+  .account-sidebar {
+    .heading {
+      color: @modern-ui-on-dark-faint;
+    }
+    .item,
+    .item .name {
+      color: @modern-ui-on-dark-muted;
+    }
+    .item img.content-mask,
+    .add-item-button img {
+      background-color: @modern-ui-on-dark-faint;
+    }
+    .item:hover {
+      color: @modern-ui-on-dark;
+      .name {
+        color: @modern-ui-on-dark;
+      }
+    }
+    .item.selected {
+      background: fade(@modern-ui-accent, 16%);
+      border-radius: 6px;
+      color: #ffffff;
+      .name {
+        color: #ffffff;
+      }
+      img.content-mask {
+        background-color: @modern-ui-accent;
+      }
+    }
+    .disclosure-triangle div {
+      border-left-color: @modern-ui-on-dark-faint;
+    }
+  }
+
+  .outline-view .item .item-count-box {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px fade(@modern-ui-accent, 45%);
+    color: @modern-ui-accent;
+  }
+  .outline-view .item .item-count-box.alt-count {
+    background: @modern-ui-accent;
+    box-shadow: none;
+    color: @modern-ui-rail-bg;
+  }
+  .outline-view .item-container.dropping .item {
+    color: @modern-ui-accent;
+  }
+
+  // ---- Thread list -----------------------------------------------------------
+  .column-ThreadList,
+  .thread-list,
+  .thread-list .list-container,
+  .thread-list .scroll-region-content {
+    background: @modern-ui-list-bg;
+  }
+
+  .thread-list .list-tabular-item {
+    background-color: @modern-ui-list-bg;
+    border-bottom: 1px solid @modern-ui-border !important;
+    color: @modern-ui-text;
+
+    .participants,
+    .subject {
+      color: @modern-ui-text;
+    }
+    .snippet,
+    .timestamp {
+      color: @modern-ui-text-secondary;
+      opacity: 1;
+    }
+  }
+
+  // ui-darkside sets the hover color with !important.
+  .thread-list .list-tabular-item:hover {
+    background-color: #f1f5f9 !important;
+  }
+
+  .thread-list .list-item.focused,
+  .thread-list .list-item.selected,
+  .thread-list.handler-split .list-item.selected,
+  .thread-list .list-tabular-item.keyboard-cursor {
+    background: @modern-ui-selected-bg !important;
+    color: @modern-ui-text;
+  }
+  .thread-list .list-tabular-item.keyboard-cursor {
+    border-left-color: @modern-ui-accent;
+  }
+  // Selected rows keep dark text; the stock theme inverts them.
+  .thread-list.handler-split .list-item.selected {
+    .participants,
+    .subject {
+      color: @modern-ui-text;
+    }
+    .snippet,
+    .timestamp {
+      color: @modern-ui-text-secondary;
+    }
+  }
+  &.is-blurred .thread-list .list-item.focused,
+  &.is-blurred .thread-list .list-item.selected,
+  &.is-blurred .thread-list.handler-split .list-item.selected {
+    background: #eef2f6 !important;
+  }
+
+  .thread-list .list-tabular-item.unread .participants,
+  .thread-list .list-tabular-item.unread .subject {
+    font-weight: 600;
+  }
+
+  // ---- Message viewer -------------------------------------------------------
+  .column-MessageList,
+  .column-MessageListSidebar,
+  #message-list {
+    background: @modern-ui-surface;
+  }
+  .column-MessageList,
+  .column-MessageListSidebar {
+    border-left: 1px solid @modern-ui-border;
+  }
+  #message-list .message-subject-wrap,
+  #message-list .message-subject {
+    color: @modern-ui-text;
+  }
+  #message-list .message-item-wrap .message-item-white-wrap {
+    box-shadow: inset 0 0 0 1px @modern-ui-border;
+  }
+  #message-list .message-header .message-time,
+  #message-list .message-participants .participant-label {
+    color: @modern-ui-text-secondary;
+  }
+}

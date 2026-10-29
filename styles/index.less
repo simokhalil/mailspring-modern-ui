@@ -1,0 +1,20 @@
+// mailspring-modern-ui
+//
+// Mailspring loads only styles/index.* when it exists (app/src/package.ts,
+// loadStylesheets), so every other file here is a partial imported below.
+// Plugin stylesheets load in the main window only (package.json windowTypes)
+// and are removed with the plugin.
+//
+// Conventions:
+//  - Classes owned by the plugin start with `modern-ui-`.
+//  - Selectors that reach into Mailspring's own markup are grouped in
+//    theme.less and the "Mailspring internals" sections below, each with the
+//    source file it depends on. docs/compatibility.md lists them.
+//  - No dependency on the active theme's ui-variables, so the layout is the
+//    same under every theme.
+
+@import 'variables';
+@import 'account-rail';
+@import 'avatars';
+@import 'folder-title';
+@import 'theme';
