@@ -1,5 +1,6 @@
 import { Account, AccountStore, Actions, FocusedPerspectiveStore } from 'mailspring-exports';
 import { ipcRenderer } from 'electron';
+import { SETTINGS_TAB_ID } from '../settings';
 
 // Everything the rail does goes through Mailspring's own actions, the same ones
 // the native account switcher menu and the Cmd+1..9 shortcuts use
@@ -32,5 +33,10 @@ export function addAccount() {
 
 export function manageAccounts() {
   Actions.switchPreferencesTab('Accounts');
+  Actions.openPreferences();
+}
+
+export function openModernUISettings() {
+  Actions.switchPreferencesTab(SETTINGS_TAB_ID);
   Actions.openPreferences();
 }

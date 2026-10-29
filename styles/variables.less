@@ -3,11 +3,20 @@
 @modern-ui-sidebar-bg: #293341;
 @modern-ui-header-bg: #202833;
 @modern-ui-header-edge: #161c24;
-@modern-ui-accent: #27b8c7;
-@modern-ui-accent-hover: #1da6b5;
+// The accent is chosen in the settings, so it is a CSS custom property set by
+// a body class (accents.less). Translucent variants use color-mix(); they are
+// escaped because Less 3 cannot evaluate them.
+@modern-ui-accent: var(--modern-ui-accent);
+@modern-ui-accent-hover: var(--modern-ui-accent-hover);
+@modern-ui-accent-16: ~'color-mix(in srgb, var(--modern-ui-accent) 16%, transparent)';
+@modern-ui-accent-22: ~'color-mix(in srgb, var(--modern-ui-accent) 22%, transparent)';
+@modern-ui-accent-45: ~'color-mix(in srgb, var(--modern-ui-accent) 45%, transparent)';
+@modern-ui-accent-60: ~'color-mix(in srgb, var(--modern-ui-accent) 60%, transparent)';
+@modern-ui-accent-70: ~'color-mix(in srgb, var(--modern-ui-accent) 70%, transparent)';
 @modern-ui-surface: #ffffff;
 @modern-ui-list-bg: #f8fafc;
-@modern-ui-selected-bg: #e7f6f8;
+// Selected row: the accent at 11% on white (#e7f7f9 for turquoise).
+@modern-ui-selected-bg: var(--modern-ui-selected-bg);
 @modern-ui-border: #e5eaf0;
 @modern-ui-text: #1f2937;
 @modern-ui-text-secondary: #64748b;
@@ -21,7 +30,9 @@
 // src/components/AccountRail.tsx.
 @modern-ui-rail-width: 64px;
 @modern-ui-rail-icon: 34px;
-@modern-ui-avatar-narrow: 34px;
-@modern-ui-avatar-wide: 24px;
+// Thread avatars follow the `avatarSize` setting (avatars.less); wide rows are
+// only 36px high, so they cap it.
+@modern-ui-avatar-size: var(--modern-ui-avatar-size);
+@modern-ui-avatar-wide-max: 26px;
 
 @modern-ui-font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', sans-serif;

@@ -1,17 +1,35 @@
 // Avatars (src/components/Avatar.tsx, ThreadAvatar.tsx)
 
+// Size from the `avatarSize` setting: src/main.ts puts one
+// `modern-ui-avatar-<px>` class on <body>.
+body {
+  --modern-ui-avatar-size: 36px;
+}
+body.modern-ui-avatar-28 {
+  --modern-ui-avatar-size: 28px;
+}
+body.modern-ui-avatar-32 {
+  --modern-ui-avatar-size: 32px;
+}
+body.modern-ui-avatar-36 {
+  --modern-ui-avatar-size: 36px;
+}
+body.modern-ui-avatar-40 {
+  --modern-ui-avatar-size: 40px;
+}
+
 .modern-ui-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
-  width: @modern-ui-avatar-narrow;
-  height: @modern-ui-avatar-narrow;
+  width: @modern-ui-avatar-size;
+  height: @modern-ui-avatar-size;
   border-radius: 50%;
   overflow: hidden;
   font-family: @modern-ui-font;
-  font-size: 13px;
+  font-size: ~'calc(var(--modern-ui-avatar-size) * 0.38)';
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -104,8 +122,8 @@
     margin: 0 6px 0 2px;
   }
   .modern-ui-avatar {
-    width: @modern-ui-avatar-wide;
-    height: @modern-ui-avatar-wide;
+    width: ~'min(var(--modern-ui-avatar-size), @{modern-ui-avatar-wide-max})';
+    height: ~'min(var(--modern-ui-avatar-size), @{modern-ui-avatar-wide-max})';
     font-size: 10px;
   }
   .modern-ui-thread-avatar__extras {

@@ -42,13 +42,21 @@ test('activate registers every feature in the right place; deactivate removes al
     ModernUIThreadAvatar: 'ThreadListIcon',
     ModernUIFolderTitle: 'ThreadList',
   });
-  assert.ok(document.body.classList.contains('modern-ui-theme'));
+  assert.deepEqual(document.body.classList.list(), [
+    'modern-ui-accent-turquoise',
+    'modern-ui-avatar-36',
+    'modern-ui-dark-chrome',
+    'modern-ui-light-content',
+  ]);
+  const { PreferencesUIStore } = rt.modules['mailspring-exports'];
+  assert.deepEqual(PreferencesUIStore.tabs.map((tab) => [tab.tabId, tab.displayName]), [['Modern UI', 'Modern UI']]);
   assert.equal(typeof main.config, 'object', 'config schema exported for Mailspring');
   assert.equal(main.config.accountIconStyle.default, 'auto');
 
   main.deactivate();
   assert.equal(rt.modules['mailspring-exports'].ComponentRegistry.entries().length, 0);
-  assert.ok(!document.body.classList.contains('modern-ui-theme'));
+  assert.deepEqual(document.body.classList.list(), [], 'no body class left');
+  assert.equal(PreferencesUIStore.tabs.length, 0, 'Preferences tab removed');
   assert.equal(rt.modules['mailspring-exports'].DatabaseStore.listenerCount(), 0, 'no DB listener left');
 });
 
@@ -92,8 +100,19 @@ test('settings toggle features live, without restart', () => {
   assert.ok(names().includes('ModernUIThreadAvatar'));
   rt.AppEnv.config.set('mailspring-modern-ui.accountRail', false);
   assert.ok(!names().includes('ModernUIAccountRail'));
-  rt.AppEnv.config.set('mailspring-modern-ui.theme', false);
-  assert.ok(!document.body.classList.contains('modern-ui-theme'));
+  rt.AppEnv.config.set('mailspring-modern-ui.darkChrome', false);
+  assert.ok(!document.body.classList.contains('modern-ui-dark-chrome'));
+  assert.ok(document.body.classList.contains('modern-ui-light-content'));
+  rt.AppEnv.config.set('mailspring-modern-ui.accent', 'violet');
+  rt.AppEnv.config.set('mailspring-modern-ui.avatarSize', 28);
+  assert.deepEqual(
+    document.body.classList.list().filter((c) => /accent|avatar/.test(c)),
+    ['modern-ui-accent-violet', 'modern-ui-avatar-28'],
+    'one class per option, the previous one removed'
+  );
+  // An invalid value written by hand falls back to the default.
+  rt.AppEnv.config.set('mailspring-modern-ui.accent', 'plaid');
+  assert.ok(document.body.classList.contains('modern-ui-accent-turquoise'));
   main.deactivate();
 });
 
@@ -178,15 +197,52 @@ test('account rail: clicking navigates through Mailspring actions and follows th
   assert.deepEqual(rt.calls.ipc.at(-1), ['command', 'application:add-account']);
   icons()[1].props.onContextMenu({ preventDefault() {} });
   const menu = rt.remoteMenus.at(-1);
-  assert.deepEqual(menu.map((m) => m.label), ['Ajouter un compte...', 'Gérer les comptes...']);
+  assert.deepEqual(menu.map((m) => m.label), [
+    'Ajouter un compte...',
+    'Gérer les comptes...',
+    undefined,
+    'Réglages Modern UI...',
+  ]);
   menu[1].click();
   assert.deepEqual(rt.calls.actions.slice(-2), [['switchPreferencesTab', 'Accounts'], ['openPreferences']]);
+  menu[3].click();
+  assert.deepEqual(rt.calls.actions.slice(-2), [['switchPreferencesTab', 'Modern UI'], ['openPreferences']]);
+  // The gear button opens the same tab.
+  byClass(r.root, 'modern-ui-account-rail__settings')[0].props.onClick();
+  assert.deepEqual(rt.calls.actions.slice(-2), [['switchPreferencesTab', 'Modern UI'], ['openPreferences']]);
 
   const stores = ['AccountStore', 'FocusedPerspectiveStore', 'CategoryStore', 'ThreadCountsStore'];
   act(() => r.unmount());
   for (const s of stores) {
     assert.equal(rt.modules['mailspring-exports'][s].listenerCount(), 0, `${s} unsubscribed`);
   }
+});
+
+test('account rail: "All accounts" entry and badges follow the settings live', async () => {
+  const rt = install();
+  setupAccounts(rt);
+  const AccountRail = rt.lib('components/AccountRail').default;
+  let r;
+  act(() => {
+    r = TestRenderer.create(React.createElement(AccountRail));
+  });
+  const icons = () => byClass(r.root, 'modern-ui-account-icon');
+  assert.equal(icons().length, 5);
+
+  await act(async () => {
+    rt.AppEnv.config.set('mailspring-modern-ui.railShowAllAccounts', false);
+    await tick(10);
+  });
+  assert.equal(icons().length, 4);
+  assert.equal(byClass(r.root, 'modern-ui-account-rail__separator').length, 0);
+
+  await act(async () => {
+    rt.AppEnv.config.set('mailspring-modern-ui.railUnreadBadges', false);
+    await tick(10);
+  });
+  assert.equal(byClass(r.root, 'modern-ui-account-icon__badge').length, 0);
+
+  act(() => r.unmount());
 });
 
 test('account rail: single account has no "All accounts" entry', () => {
@@ -411,4 +467,93 @@ test('notifications: leaves everything alone when the built-in is missing or dif
   await tick(20);
   assert.equal(mod.notifier, stock);
   assert.equal(stock.listening, true);
+});
+
+test('Preferences tab: native markup, French labels, writes through AppEnv.config', async () => {
+  const rt = install();
+  const statusModule = rt.lib('services/notification-delete-action');
+  const SettingsTab = rt.lib('components/SettingsTab').default;
+  let r;
+  act(() => {
+    r = TestRenderer.create(React.createElement(SettingsTab, { accountId: null }));
+  });
+  const headings = r.root.findAllByType('h6').map((h) => h.props.children);
+  assert.deepEqual(headings, ['Rail des comptes', 'Liste des messages', 'Apparence', 'Notifications']);
+  const input = (key) => r.root.find((n) => n.props.id === `modern-ui-setting-${key}`);
+
+  // Defaults shown.
+  assert.equal(input('accountRail').props.checked, true);
+  assert.equal(input('avatarSize').props.value, 36);
+  assert.equal(input('notificationAction').props.value, 'trash');
+
+  // Writes go to Mailspring's config, typed as the schema expects.
+  act(() => input('railUnreadBadges').props.onChange({ target: { checked: false } }));
+  assert.equal(rt.state.config['mailspring-modern-ui.railUnreadBadges'], false);
+  act(() => input('avatarSize').props.onChange({ target: { value: '40' } }));
+  assert.strictEqual(rt.state.config['mailspring-modern-ui.avatarSize'], 40);
+  const violet = r.root.find((n) => n.props.role === 'radio' && n.props.title === 'Violet');
+  act(() => violet.props.onClick());
+  assert.equal(rt.state.config['mailspring-modern-ui.accent'], 'violet');
+  const swatch = (title) => r.root.find((n) => n.props.role === 'radio' && n.props.title === title);
+  assert.equal(swatch('Violet').props['aria-checked'], true, 'selected swatch follows the config');
+  assert.equal(swatch('Turquoise').props['aria-checked'], false);
+
+  // Rail sub-options are disabled while the rail is off; edits made
+  // elsewhere (config.json) show up immediately.
+  act(() => rt.AppEnv.config.set('mailspring-modern-ui.accountRail', false));
+  assert.equal(input('railShowAllAccounts').props.disabled, true);
+  assert.equal(input('accountIconStyle').props.disabled, true);
+  assert.equal(input('threadAvatars').props.disabled, false);
+
+  // Restore defaults clears every stored value.
+  const reset = r.root.find((n) => n.type === 'button' && n.props.className === 'btn');
+  act(() => reset.props.onClick());
+  assert.deepEqual(
+    Object.keys(rt.state.config).filter((k) => k.startsWith('mailspring-modern-ui.')),
+    []
+  );
+  assert.equal(input('accountRail').props.checked, true);
+  assert.equal(statusModule.notificationActionStatus(), 'off');
+
+  act(() => r.unmount());
+});
+
+test('Preferences tab: notification option is disabled when Mailspring cannot be changed', () => {
+  const rt = install();
+  const notif = rt.lib('services/notification-delete-action');
+  notif.enableNotificationDeleteAction(); // no unread-notifications package in this runtime
+  assert.equal(notif.notificationActionStatus(), 'unavailable');
+  const SettingsTab = rt.lib('components/SettingsTab').default;
+  const r = TestRenderer.create(React.createElement(SettingsTab));
+  assert.equal(r.root.find((n) => n.props.id === 'modern-ui-setting-notificationAction').props.disabled, true);
+  assert.equal(r.root.findAll((n) => n.props.className === 'platform-note').length, 1);
+  r.unmount();
+});
+
+test('notification action setting: "archive" restores the stock notifier, "trash" swaps it back', async () => {
+  const rt = install();
+  const mod = installFakeNotifier(rt);
+  const stock = new mod.Notifier();
+  mod.notifier = stock;
+  const main = rt.lib('main');
+  main.activate();
+  await tick(20);
+  assert.notEqual(mod.notifier, stock);
+  assert.equal(mod.notifier.constructor.name, 'DeleteActionNotifier');
+
+  rt.AppEnv.config.set('mailspring-modern-ui.notificationAction', 'archive');
+  assert.equal(mod.notifier.constructor, mod.Notifier, 'stock Notifier back');
+  rt.AppEnv.config.set('mailspring-modern-ui.notificationAction', 'trash');
+  await tick(20);
+  assert.equal(mod.notifier.constructor.name, 'DeleteActionNotifier');
+  main.deactivate();
+});
+
+test('English when Mailspring is in English', () => {
+  const rt = install();
+  rt.state.locale = 'en-US';
+  const SettingsTab = rt.lib('components/SettingsTab').default;
+  const r = TestRenderer.create(React.createElement(SettingsTab));
+  assert.equal(r.root.findAllByType('h6')[0].props.children, 'Account rail');
+  r.unmount();
 });

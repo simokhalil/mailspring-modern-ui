@@ -23,7 +23,10 @@ it changes.
 | `DatabaseStore.findAll(Contact).where(Contact.attributes.email.in(...))` | Local contact photos | `app/src/flux/stores/database-store.ts` |
 | `NativeNotifications.displayNotification`, `TaskFactory.tasksForMovingToTrash`, `Actions.queueTasks` | Delete action | `app/src/native-notifications.ts`, `app/src/flux/tasks/task-factory.ts` |
 | `RetinaImg` with `ic-settings-account-<provider>.png` | Provider logos already shipped with Mailspring | `preferences/lib/tabs/preferences-account-list.tsx` |
-| Package fields `main`, `engines`, `windowTypes`, `syncInit`, exported `config` | Packaging | `app/src/package.ts`, `app/src/package-manager.ts` |
+| Package fields `main`, `engines`, `windowTypes`, `syncInit`, exported `config` | Packaging, settings schema | `app/src/package.ts`, `app/src/package-manager.ts` |
+| `PreferencesUIStore.TabItem`, `registerPreferencesTab/unregisterPreferencesTab`, `Actions.switchPreferencesTab` | Preferences › Modern UI | `app/src/flux/stores/preferences-ui-store.ts` (also used by composer-signature, composer-templates, mcp-server) |
+| `AppEnv.config.get/set/unset/onDidChange` | Persisted, validated settings | `app/src/config.ts` |
+| `getCurrentLocale` | Plugin strings in French or English | `app/src/intl.ts` |
 
 ## Internal details relied on
 
@@ -39,7 +42,7 @@ it changes.
   the RootSidebar components at a copy with `maxWidth + 64` (the rail width), and puts the original
   object back when the rail is turned off. The native object is never mutated.
 - **If it changes:** the rail may overlap the folder list or sit above it. Data
-  and navigation are unaffected. Set `"accountRail": false` to remove it.
+  and navigation are unaffected. Set Turn the rail off in Preferences › Modern UI.
 
 ### 2. Narrow thread-list rows (CSS + ordering)
 - `.thread-list-narrow .icons-column` and its children `.thread-icon`,
@@ -49,7 +52,7 @@ it changes.
   before the optional `open-tracking` and `personal-level-indicators` packages,
   and re-renders their icons in a small chip on the avatar so they stay visible.
 - **If it changes:** the avatar may be missing or misaligned in split view.
-  `"threadAvatars": false` removes it.
+  Turning avatars off in Preferences › Modern UI removes it.
 
 ### 3. Notification "Delete" button (JS)
 - Loads `<unread-notifications package>/lib/main` (resolved through
@@ -63,14 +66,17 @@ it changes.
 - No Mailspring function is patched or wrapped; nothing is written to disk.
 - **If it changes:** notifications keep their stock "Archive" button. A future
   version could also change `_notifyOne`'s behavior in ways the subclass does
-  not copy (it mirrors 1.26.2). `"notificationDeleteAction": false` disables it.
+  not copy (it mirrors 1.26.2). Choosing "Archive" in Preferences › Modern UI
+  puts the stock notifier back. The settings tab greys the option out when the
+  checks fail.
 
 ### 4. Theme colors (CSS)
-`styles/theme.less` restyles `.sheet-toolbar*`, `.toolbar-<Column>`,
+`styles/chrome.less` (under `body.modern-ui-dark-chrome`) and
+`styles/content.less` (under `body.modern-ui-light-content`) restyle `.sheet-toolbar*`, `.toolbar-<Column>`,
 `.btn-toolbar`, `.button-group` (draws the macOS pill outline), `.thread-search-bar`, `.account-sidebar`, `.outline-view .item`,
 `.list-tabular-item`, `.thread-list`, `.column-<Column>` and `#message-list`.
-All rules are under `body.modern-ui-theme`. Visual only; `"theme": false`
-removes every one of them at once.
+Visual only; each set is removed at once by its setting. The accent is a CSS
+custom property; translucent variants use `color-mix()` (Chromium 111+).
 
 ## Forward compatibility notes
 

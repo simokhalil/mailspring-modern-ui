@@ -21,7 +21,8 @@ Mailspring, `package.json` avec `engines.mailspring` et `windowTypes`).
 | B | Avatars dans la liste des messages | ✅ Implémentée | Rôle `ThreadListIcon` (point d'extension officiel de la liste) |
 | C | Titre dynamique du dossier | ✅ Implémentée | Composant injecté dans la colonne `ThreadList`, lit `FocusedPerspectiveStore` |
 | D | « Supprimer » au lieu d'« Archiver » dans les notifications | ✅ Implémentée, avec garde-fous | Remplace l'instance `Notifier` du package interne `unread-notifications` par une sous-classe (aucun patch) |
-| — | Palette sombre/claire | ✅ Implémentée | `styles/theme.less`, désactivable |
+| — | Palette sombre/claire, accent | ✅ Implémentée | `styles/chrome.less`, `styles/content.less`, `styles/accents.less`, désactivables |
+| — | Réglages | ✅ Implémentée | Onglet natif Préférences › Modern UI (`PreferencesUIStore`), ⚙ dans le rail |
 
 ### A. Rail des comptes
 - 64 px, fond `#202833`, à gauche de la sidebar native, dans la même colonne :
@@ -115,33 +116,56 @@ notifications n'existe qu'en mémoire.
 
 ## Réglages
 
-Sans interface (Mailspring n'en fournit pas aux plugins). À ajouter dans
-`~/Library/Application Support/Mailspring/config.json`, dans la section `"*"` ;
-ils s'appliquent sans redémarrer :
+**Mailspring › Préférences › Modern UI** (onglet ajouté par le plugin via l'API
+publique `PreferencesUIStore`, comme les plugins intégrés « Signatures » ou
+« MCP »). Aussi accessible depuis l'icône ⚙ en bas du rail et son clic droit ;
+l'onglet reste disponible quand le rail est désactivé.
 
-```json
-"mailspring-modern-ui": {
-  "accountRail": true,
-  "accountIconStyle": "auto",
-  "threadAvatars": true,
-  "folderTitle": true,
-  "theme": true,
-  "notificationDeleteAction": true
-}
-```
+| Section | Réglage | Valeurs (défaut en gras) |
+|---|---|---|
+| Rail des comptes | Afficher le rail | **oui** / non |
+| | Entrée « Tous les comptes » | **oui** / non |
+| | Badges de non-lus | **oui** / non |
+| | Icônes des comptes | **automatique** / logo / initiales |
+| Liste des messages | Avatars des contacts | **oui** / non |
+| | Taille des avatars | 28 / 32 / **36** / 40 px |
+| | Titre du dossier | **oui** / non |
+| Apparence | Barre d'outils et sidebar sombres | **oui** / non |
+| | Couleurs Modern UI pour la liste et la lecture | **oui** / non |
+| | Couleur d'accent | **turquoise**, bleu, indigo, violet, rose, orange, vert |
+| Notifications | Second bouton | **Supprimer (Corbeille)** / Archiver (natif) |
 
-`accountIconStyle` : `auto` (logo, sauf fournisseur partagé), `provider`, `initials`.
+Chaque changement s'applique immédiatement, sans redémarrer. Les valeurs sont
+enregistrées par le système de configuration de Mailspring (`AppEnv.config`,
+validé par le schéma exporté par le plugin) dans `config.json`, sous la clé
+`mailspring-modern-ui`. Le bouton « Rétablir les réglages par défaut » les efface.
+Les préférences natives de Mailspring ne sont pas modifiées.
+
+Notes :
+- Si l'entrée « Tous les comptes » est masquée, la vue unifiée reste accessible
+  par Cmd+1 ou le menu Fenêtre.
+- En disposition liste (lignes de 36 px), les avatars sont plafonnés à 26 px.
+- Si la version de Mailspring ne permet pas de modifier les notifications, le
+  réglage est grisé avec une explication.
+- L'onglet utilise l'icône générique des Préférences : Mailspring ne cherche
+  les icônes d'onglet que dans ses propres ressources.
+- Les clés `theme` et `notificationDeleteAction` d'une version précédente sont
+  ignorées (remplacées par `darkChrome`/`lightContent` et `notificationAction`).
 
 ## Structure
 
 ```
 package.json            main ./lib/main, engines.mailspring, windowTypes, syncInit
 src/main.ts             activate/deactivate, activation de chaque fonctionnalité
-src/settings.ts         schéma de réglages (export `config`)
-src/components/         AccountRail, AccountIcon, RailTooltip, Avatar, ThreadAvatar, FolderTitle
+src/settings.ts         schéma de réglages (export `config`), lecture/écriture
+src/i18n.ts             textes du plugin (anglais, français)
+src/components/         AccountRail, AccountIcon, RailTooltip, Avatar, ThreadAvatar,
+                        FolderTitle, SettingsTab (onglet des Préférences)
 src/services/           navigation comptes, choix du contact, initiales/couleurs,
-                        photos vCard, cache photos, titre, notifications
-styles/index.less       point d'entrée chargé par Mailspring (+ partiels)
+                        photos vCard, cache photos, titre, largeur de colonne,
+                        accents, notifications
+styles/index.less       point d'entrée chargé par Mailspring (+ partiels : rail,
+                        avatars, titre, accents, chrome sombre, contenu clair, onglet)
 lib/                    JavaScript compilé, livré
 types/mailspring/       déclarations TypeScript de l'API Mailspring utilisée
 test/                   tests (node:test) avec un runtime Mailspring simulé
@@ -172,7 +196,7 @@ npm run verify
 | `tsc` (TypeScript 5.9, strict sur les variables inutilisées) | ✅ sans erreur |
 | Compilation LESS avec Less 3.13.1 (version embarquée par Mailspring 1.26.2) | ✅ |
 | `scripts/verify-package.js` : nom, `engines`, `windowTypes`, point d'entrée, exports, `lib/` à jour, aucun `require` hors runtime Mailspring | ✅ |
-| 25 tests `node:test`, dont 11 qui chargent `lib/` contre un runtime Mailspring simulé (enregistrement, rendu React 17, navigation, mises à jour des stores, désabonnements, réglages à chaud, notifications) | ✅ 25/25 |
+| 33 tests `node:test` : services purs ; 17 qui chargent `lib/` contre un runtime Mailspring simulé (enregistrement, rendu React 17, navigation, stores, désabonnements, réglages à chaud, onglet des Préférences, notifications) ; 3 qui compilent le LESS et vérifient accents, tailles d'avatar et portée des règles de thème | ✅ 33/33 |
 | `install.sh` / `uninstall.sh` vers un dossier temporaire (annulation, copie, suppression) | ✅ |
 | Chargement dans Mailspring 1.26.2 (votre installation) | ✅ actif, aucune erreur console |
 
@@ -199,8 +223,11 @@ l'installation principale. La validation visuelle se fait sur l'installation ré
    en arrière-plan ; Réglages Système › Notifications › Mailspring : style
    « Alertes » pour voir les boutons. « Supprimer » → le message est dans la
    Corbeille du bon compte.
-6. **Désactivation** : `"theme": false` dans config.json → couleurs d'origine
-   immédiatement ; désinstaller et relancer → interface native complète.
+6. **Réglages** : Préférences › Modern UI (ou ⚙ dans le rail). Changer
+   l'accent, la taille des avatars, masquer « Tous les comptes » : effet
+   immédiat. Désactiver le rail : l'onglet reste dans les Préférences.
+   Décocher les deux options d'Apparence : couleurs d'origine immédiatement.
+7. **Désinstallation** : désinstaller et relancer → interface native complète.
 
 ## Limites
 
@@ -220,7 +247,7 @@ l'installation principale. La validation visuelle se fait sur l'installation ré
   les notifications natives. Les 5 nouveaux messages ou plus sont regroupés
   sans bouton (comportement natif).
 - **Thème** : écrit par-dessus les styles de base de Mailspring et de
-  ui-darkside (votre thème actuel), d'après leur code source ; pas encore vérifié
-  à l'écran. Avec un thème sombre, mettez `"theme": false`.
+  ui-darkside, et vérifié à l'écran avec ui-darkside. Avec un thème sombre, décochez « Couleurs Modern UI pour la liste
+  et la lecture ».
 - **Futures versions** : la branche `master` de Mailspring ajoute un rail de
   navigation natif ; voir docs/compatibility.md.

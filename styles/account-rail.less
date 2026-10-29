@@ -75,7 +75,9 @@
 .modern-ui-account-rail__footer {
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   padding: 8px 0 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -106,7 +108,38 @@
     outline: none;
   }
   &:focus-visible {
-    box-shadow: 0 0 0 2px fade(@modern-ui-accent, 60%);
+    box-shadow: 0 0 0 2px @modern-ui-accent-60;
+  }
+}
+
+// Opens Preferences › Modern UI.
+.modern-ui-account-rail__settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: @modern-ui-on-dark-faint;
+  cursor: default;
+  transition: color 120ms ease, background-color 120ms ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+  &:hover {
+    color: @modern-ui-on-dark;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px @modern-ui-accent-60;
   }
 }
 
@@ -146,7 +179,7 @@
   }
   &:focus-visible .modern-ui-account-icon__visual {
     opacity: 1;
-    box-shadow: 0 0 0 2px @modern-ui-rail-bg, 0 0 0 4px fade(@modern-ui-accent, 70%);
+    box-shadow: 0 0 0 2px @modern-ui-rail-bg, 0 0 0 4px @modern-ui-accent-70;
   }
 
   // Selected: full opacity, an accent ring, and a bar on the rail's edge.
@@ -201,7 +234,7 @@
   }
 }
 .modern-ui-account-icon.is-selected .modern-ui-account-icon__visual--all {
-  background: fade(@modern-ui-accent, 22%);
+  background: @modern-ui-accent-22;
   color: #ffffff;
 }
 

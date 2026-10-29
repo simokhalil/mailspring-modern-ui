@@ -51,6 +51,7 @@ function createRuntime() {
     contacts: [], // rows returned by DatabaseStore.findAll(Contact)
     config: {},
     packages: {},
+    locale: 'fr-FR',
   };
   const calls = { actions: [], tasks: [], notifications: [], queries: [], ipc: [] };
 
@@ -61,6 +62,11 @@ function createRuntime() {
       set(key, value) {
         state.config[key] = value;
         (configListeners.get(key) || []).forEach((fn) => fn({ newValue: value }));
+        return true;
+      },
+      unset(key) {
+        delete state.config[key];
+        (configListeners.get(key) || []).forEach((fn) => fn({ newValue: undefined }));
       },
       onDidChange(key, fn) {
         if (!configListeners.has(key)) configListeners.set(key, new Set());
@@ -196,8 +202,26 @@ function createRuntime() {
     return s;
   };
 
+  class TabItem {
+    constructor(opts) {
+      Object.assign(this, opts);
+    }
+  }
+  const PreferencesUIStore = createStore({
+    TabItem,
+    tabs: [],
+    registerPreferencesTab(tab) {
+      this.tabs.push(tab);
+    },
+    unregisterPreferencesTab(tabOrId) {
+      this.tabs = this.tabs.filter((t) => t !== tabOrId && t.tabId !== tabOrId);
+    },
+  });
+
   const exportsModule = {
     React,
+    PreferencesUIStore,
+    getCurrentLocale: () => state.locale,
     ReactDOM,
     localized,
     Actions,
@@ -281,6 +305,7 @@ function install() {
       add: (c) => classes.add(c),
       remove: (c) => classes.delete(c),
       contains: (c) => classes.has(c),
+      list: () => [...classes].sort(),
     },
   };
   global.requestAnimationFrame = (fn) => setTimeout(fn, 0);

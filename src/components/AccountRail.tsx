@@ -16,8 +16,10 @@ import {
   focusAccount,
   focusAllAccounts,
   manageAccounts,
+  openModernUISettings,
 } from '../services/account-navigation';
-import { getSetting } from '../settings';
+import { getSetting, observeSetting, SettingKey } from '../settings';
+import { t } from '../i18n';
 
 // Keep in sync with @modern-ui-rail-width in styles/variables.less.
 export const RAIL_WIDTH = 64;
@@ -27,7 +29,12 @@ interface AccountRailState {
   selection: string;
   unread: { [accountId: string]: number };
   iconStyle: AccountIconStyle;
+  showAllAccounts: boolean;
+  showBadges: boolean;
 }
+
+// Settings the rail reads; it re-renders when any of them changes.
+const RAIL_SETTINGS: SettingKey[] = ['accountIconStyle', 'railShowAllAccounts', 'railUnreadBadges'];
 
 function unreadInboxCount(account: Account): number {
   const inbox = CategoryStore.getInboxCategory(account);
@@ -64,7 +71,7 @@ export default class AccountRail extends React.Component<Record<string, unknown>
   };
 
   private unlisteners: Array<() => void> = [];
-  private configSubscription: { dispose(): void } | null = null;
+  private configSubscriptions: Array<{ dispose(): void }> = [];
   private frame: number | null = null;
 
   constructor(props: Record<string, unknown>) {
@@ -79,19 +86,14 @@ export default class AccountRail extends React.Component<Record<string, unknown>
       CategoryStore.listen(this.scheduleUpdate),
       ThreadCountsStore.listen(this.scheduleUpdate),
     ];
-    this.configSubscription = AppEnv.config.onDidChange(
-      'mailspring-modern-ui.accountIconStyle',
-      this.scheduleUpdate
-    );
+    this.configSubscriptions = RAIL_SETTINGS.map((key) => observeSetting(key, this.scheduleUpdate));
   }
 
   componentWillUnmount() {
     this.unlisteners.forEach((unlisten) => unlisten());
     this.unlisteners = [];
-    if (this.configSubscription) {
-      this.configSubscription.dispose();
-      this.configSubscription = null;
-    }
+    this.configSubscriptions.forEach((s) => s.dispose());
+    this.configSubscriptions = [];
     if (this.frame !== null) {
       cancelAnimationFrame(this.frame);
       this.frame = null;
@@ -111,6 +113,8 @@ export default class AccountRail extends React.Component<Record<string, unknown>
       const changed =
         next.selection !== prev.selection ||
         next.iconStyle !== prev.iconStyle ||
+        next.showAllAccounts !== prev.showAllAccounts ||
+        next.showBadges !== prev.showBadges ||
         next.accounts.length !== prev.accounts.length ||
         next.accounts.some((a, i) => a !== prev.accounts[i]) ||
         !sameUnread(next.unread, prev.unread);
@@ -135,6 +139,8 @@ export default class AccountRail extends React.Component<Record<string, unknown>
       selection: currentSelection(),
       unread,
       iconStyle: iconStyleSetting(),
+      showAllAccounts: getSetting('railShowAllAccounts') !== false,
+      showBadges: getSetting('railUnreadBadges') !== false,
     };
   }
 
@@ -151,15 +157,18 @@ export default class AccountRail extends React.Component<Record<string, unknown>
     Menu.buildFromTemplate([
       { label: `${localized('Add Account')}...`, click: addAccount },
       { label: `${localized('Manage Accounts')}...`, click: manageAccounts },
+      { type: 'separator' },
+      { label: `${t('Modern UI settings')}...`, click: openModernUISettings },
     ]).popup({});
   };
 
   render() {
-    const { accounts, selection, unread, iconStyle } = this.state;
+    const { accounts, selection, unread, iconStyle, showAllAccounts, showBadges } = this.state;
     if (accounts.length === 0) {
       return null;
     }
     const multiple = accounts.length > 1;
+    const showAllEntry = multiple && showAllAccounts;
     const providerCounts: { [provider: string]: number } = {};
     accounts.forEach((a) => {
       providerCounts[a.provider] = (providerCounts[a.provider] || 0) + 1;
@@ -168,19 +177,19 @@ export default class AccountRail extends React.Component<Record<string, unknown>
     return (
       <nav className="modern-ui-account-rail" aria-label={localized('Accounts')}>
         <div className="modern-ui-account-rail__list">
-          {multiple ? (
+          {showAllEntry ? (
             <AccountIcon
               account={null}
               label={localized('All Accounts')}
               selected={selection === ALL_ACCOUNTS}
-              unread={unread[ALL_ACCOUNTS] || 0}
+              unread={showBadges ? unread[ALL_ACCOUNTS] || 0 : 0}
               providerShared={false}
               iconStyle={iconStyle}
               onSelect={this.onSelect}
               onContextMenu={this.onContextMenu}
             />
           ) : null}
-          {multiple ? <div className="modern-ui-account-rail__separator" role="separator" /> : null}
+          {showAllEntry ? <div className="modern-ui-account-rail__separator" role="separator" /> : null}
           {accounts.map((account) => (
             <AccountIcon
               key={account.id}
@@ -188,7 +197,7 @@ export default class AccountRail extends React.Component<Record<string, unknown>
               label={account.label || account.emailAddress}
               description={account.label !== account.emailAddress ? account.emailAddress : null}
               selected={selection === account.id || (!multiple && selection === ALL_ACCOUNTS)}
-              unread={unread[account.id] || 0}
+              unread={showBadges ? unread[account.id] || 0 : 0}
               providerShared={providerCounts[account.provider] > 1}
               iconStyle={iconStyle}
               onSelect={this.onSelect}
@@ -210,6 +219,24 @@ export default class AccountRail extends React.Component<Record<string, unknown>
           >
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="modern-ui-account-rail__settings"
+            title={t('Modern UI settings')}
+            aria-label={t('Modern UI settings')}
+            onClick={openModernUISettings}
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path
+                d="M8.6 2.5h2.8l.4 2.1 1.5.9 2-.8 1.4 2.4-1.6 1.4v1.8l1.6 1.4-1.4 2.4-2-.8-1.5.9-.4 2.1H8.6l-.4-2.1-1.5-.9-2 .8-1.4-2.4 1.6-1.4V8.5L3.3 7.1l1.4-2.4 2 .8 1.5-.9Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+              <circle cx="10" cy="10" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
             </svg>
           </button>
         </div>

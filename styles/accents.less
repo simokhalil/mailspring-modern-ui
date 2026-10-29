@@ -1,0 +1,24 @@
+// Accent presets (setting `accent`). src/main.ts puts one
+// `modern-ui-accent-<id>` class on <body>; keep the list in sync with
+// src/services/accents.ts (checked by test/styles.test.js).
+
+body {
+  --modern-ui-accent: #27b8c7;
+  --modern-ui-accent-hover: #1da6b5;
+  --modern-ui-selected-bg: ~'color-mix(in srgb, var(--modern-ui-accent) 11%, #ffffff)';
+}
+
+.modern-ui-accent(@id, @color, @hover) {
+  body.modern-ui-accent-@{id} {
+    --modern-ui-accent: @color;
+    --modern-ui-accent-hover: @hover;
+  }
+}
+
+.modern-ui-accent(turquoise, #27b8c7, #1da6b5);
+.modern-ui-accent(blue, #3b82f6, #2563eb);
+.modern-ui-accent(indigo, #6366f1, #4f46e5);
+.modern-ui-accent(violet, #8b5cf6, #7c3aed);
+.modern-ui-accent(pink, #ec4899, #db2777);
+.modern-ui-accent(orange, #f97316, #ea580c);
+.modern-ui-accent(green, #10b981, #059669);

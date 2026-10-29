@@ -1,4 +1,4 @@
-import { ComponentRegistry, WorkspaceStore } from 'mailspring-exports';
+import { ComponentRegistry, WorkspaceStore, PreferencesUIStore } from 'mailspring-exports';
 
 import AccountRail, { RAIL_WIDTH } from './components/AccountRail';
 import FolderTitle from './components/FolderTitle';
@@ -9,17 +9,21 @@ import {
   enableNotificationDeleteAction,
   disableNotificationDeleteAction,
 } from './services/notification-delete-action';
-import { getSetting, observeSetting, SettingKey } from './settings';
+import { getSetting, observeSetting, SettingKey, SETTINGS_TAB_ID } from './settings';
+import { t } from './i18n';
 
 export { config } from './settings';
 
-// Class added to <body> while the color theme is on. Every rule in
-// styles/theme.less is scoped under it, so turning the setting off (or removing
-// the plugin) restores Mailspring's own theme.
-const THEME_BODY_CLASS = 'modern-ui-theme';
+// Body classes for the stylesheet. Every theme rule is scoped under one of
+// them, so turning a setting off (or removing the plugin) restores
+// Mailspring's own look.
+const DARK_CHROME_CLASS = 'modern-ui-dark-chrome';
+const LIGHT_CONTENT_CLASS = 'modern-ui-light-content';
 
 interface Feature {
   setting: SettingKey;
+  // A setting value turns the feature on when isOn returns true.
+  isOn?: (value: any) => boolean;
   enable(): void;
   disable(): void;
 }
@@ -55,19 +59,35 @@ const FEATURES: Feature[] = [
     disable: () => ComponentRegistry.unregister(FolderTitle),
   },
   {
-    setting: 'theme',
-    enable: () => document.body.classList.add(THEME_BODY_CLASS),
-    disable: () => document.body.classList.remove(THEME_BODY_CLASS),
+    setting: 'darkChrome',
+    enable: () => document.body.classList.add(DARK_CHROME_CLASS),
+    disable: () => document.body.classList.remove(DARK_CHROME_CLASS),
   },
   {
-    setting: 'notificationDeleteAction',
+    setting: 'lightContent',
+    enable: () => document.body.classList.add(LIGHT_CONTENT_CLASS),
+    disable: () => document.body.classList.remove(LIGHT_CONTENT_CLASS),
+  },
+  {
+    setting: 'notificationAction',
+    isOn: (value) => value === 'trash',
     enable: enableNotificationDeleteAction,
     disable: disableNotificationDeleteAction,
   },
 ];
 
+// Settings with several values that map to one body class each:
+// `modern-ui-accent-<id>` and `modern-ui-avatar-<px>` (styles/accents.less,
+// styles/avatars.less).
+const BODY_OPTIONS: Array<{ setting: SettingKey; prefix: string }> = [
+  { setting: 'accent', prefix: 'modern-ui-accent-' },
+  { setting: 'avatarSize', prefix: 'modern-ui-avatar-' },
+];
+
 const enabled = new Set<SettingKey>();
+const bodyOptionClasses = new Map<SettingKey, string>();
 let subscriptions: Array<{ dispose(): void }> = [];
+let settingsTab: any = null;
 
 function apply(feature: Feature, on: boolean) {
   if (on === enabled.has(feature.setting)) {
@@ -88,13 +108,52 @@ function apply(feature: Feature, on: boolean) {
   }
 }
 
+function applyBodyOption(setting: SettingKey, prefix: string, value: any) {
+  const previous = bodyOptionClasses.get(setting);
+  if (previous) {
+    document.body.classList.remove(previous);
+    bodyOptionClasses.delete(setting);
+  }
+  if (value !== null) {
+    const cls = `${prefix}${value}`;
+    document.body.classList.add(cls);
+    bodyOptionClasses.set(setting, cls);
+  }
+}
+
+function isOn(feature: Feature, value: any) {
+  return feature.isOn ? feature.isOn(value) : value !== false;
+}
+
+// The settings tab lives in Mailspring's own Preferences, through the same
+// public API the bundled plugins use, so it stays reachable when the rail is
+// hidden. The rail adds shortcuts to it.
+function registerSettingsTab() {
+  settingsTab = new PreferencesUIStore.TabItem({
+    tabId: SETTINGS_TAB_ID,
+    displayName: t('Modern UI'),
+    componentClassFn: () => require('./components/SettingsTab').default,
+    order: 4.5,
+  });
+  PreferencesUIStore.registerPreferencesTab(settingsTab);
+}
+
 // Called by Mailspring when the plugin loads. package.json limits it to the
 // main window ("windowTypes": {"default": true}), so composer and popout
 // windows are never touched.
 export function activate() {
   for (const feature of FEATURES) {
-    apply(feature, getSetting(feature.setting) !== false);
-    subscriptions.push(observeSetting(feature.setting, (value) => apply(feature, value !== false)));
+    apply(feature, isOn(feature, getSetting(feature.setting)));
+    subscriptions.push(observeSetting(feature.setting, (value) => apply(feature, isOn(feature, value))));
+  }
+  for (const { setting, prefix } of BODY_OPTIONS) {
+    applyBodyOption(setting, prefix, getSetting(setting));
+    subscriptions.push(observeSetting(setting, (value) => applyBodyOption(setting, prefix, value)));
+  }
+  try {
+    registerSettingsTab();
+  } catch (err) {
+    console.error('[mailspring-modern-ui] could not add the Preferences tab', err);
   }
 }
 
@@ -108,5 +167,12 @@ export function deactivate() {
   subscriptions = [];
   for (const feature of [...FEATURES].reverse()) {
     apply(feature, false);
+  }
+  for (const { setting, prefix } of BODY_OPTIONS) {
+    applyBodyOption(setting, prefix, null);
+  }
+  if (settingsTab) {
+    PreferencesUIStore.unregisterPreferencesTab(settingsTab);
+    settingsTab = null;
   }
 }

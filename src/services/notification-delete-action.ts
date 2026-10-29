@@ -35,9 +35,17 @@ interface NotifierModule {
   notifier: any;
 }
 
+export type NotificationActionStatus = 'off' | 'pending' | 'active' | 'unavailable';
+
+let status: NotificationActionStatus = 'off';
 let builtinModule: NotifierModule | null = null;
 let installed: any = null;
 let waitTimer: ReturnType<typeof setTimeout> | null = null;
+
+// For the settings tab, which says so when this Mailspring version cannot be changed.
+export function notificationActionStatus(): NotificationActionStatus {
+  return status;
+}
 
 function log(...args: any[]) {
   console.log('[mailspring-modern-ui] notifications:', ...args);
@@ -163,13 +171,16 @@ export function enableNotificationDeleteAction() {
     mod = loadBuiltinModule();
   } catch (err) {
     log('built-in notifier not found, leaving notifications unchanged', err);
+    status = 'unavailable';
     return;
   }
   if (!isCompatible(mod)) {
     log('built-in notifier has an unexpected shape, leaving notifications unchanged');
+    status = 'unavailable';
     return;
   }
   builtinModule = mod;
+  status = 'pending';
 
   // This plugin activates early (syncInit) and unread-notifications a moment
   // later, so its instance may not exist yet.
@@ -179,9 +190,13 @@ export function enableNotificationDeleteAction() {
     if (mod.notifier) {
       try {
         if (swapIn(mod)) {
+          status = 'active';
           log('"Archive" replaced with "Delete"');
+        } else {
+          status = 'unavailable';
         }
       } catch (err) {
+        status = 'unavailable';
         log('could not install, leaving notifications unchanged', err);
       }
       return;
@@ -189,6 +204,7 @@ export function enableNotificationDeleteAction() {
     if (Date.now() - startedAt < WAIT_MAX_MS) {
       waitTimer = setTimeout(attempt, WAIT_STEP_MS);
     } else {
+      status = 'unavailable';
       log('unread-notifications never activated, nothing to replace');
     }
   };
@@ -199,6 +215,9 @@ export function disableNotificationDeleteAction() {
   if (waitTimer) {
     clearTimeout(waitTimer);
     waitTimer = null;
+  }
+  if (status !== 'unavailable') {
+    status = 'off';
   }
   if (!installed || !builtinModule) {
     return;

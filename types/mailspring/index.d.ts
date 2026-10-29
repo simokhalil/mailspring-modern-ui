@@ -165,6 +165,20 @@ declare module 'mailspring-exports' {
   };
 
   export function localized(key: string, ...args: any[]): string;
+  export function getCurrentLocale(): string;
+
+  export class PreferencesTabItem {
+    tabId: string;
+    displayName: string;
+    order: number;
+    componentClassFn: () => any;
+    constructor(opts: { tabId: string; displayName: string; componentClassFn: () => any; order?: number });
+  }
+  export const PreferencesUIStore: Listenable & {
+    TabItem: typeof PreferencesTabItem;
+    registerPreferencesTab(tab: PreferencesTabItem): void;
+    unregisterPreferencesTab(tabOrId: PreferencesTabItem | string): void;
+  };
 }
 
 declare module 'mailspring-component-kit' {
@@ -210,6 +224,8 @@ declare module '@electron/remote' {
 declare const AppEnv: {
   config: {
     get(key: string): any;
+    set(key: string, value: any): boolean;
+    unset(key: string): void;
     onDidChange(key: string, callback: (event: { newValue: any }) => void): { dispose(): void };
   };
   packages: {

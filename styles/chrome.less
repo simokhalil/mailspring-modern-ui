@@ -1,20 +1,19 @@
-// Modern UI colors: dark toolbar, sidebar and rail; light list and reader.
+// Dark toolbar and folder sidebar (setting `darkChrome`).
 //
-// Every rule is scoped under body.modern-ui-theme, which src/main.ts adds while
-// the `theme` setting is on. The extra class also outranks the active theme's
-// selectors (themes load after plugins), without !important except where the
-// stock theme uses it. The composer window never loads this plugin, and inline
-// reply composers are left alone.
+// Scoped under body.modern-ui-dark-chrome, added by src/main.ts while the
+// setting is on. The extra class also outranks the active theme's selectors
+// (themes load after plugins), without !important except where the stock
+// theme uses it.
 //
 // Mailspring internals targeted here (markup from app/src/sheet-toolbar.tsx,
-// app/src/sheet.tsx, account-sidebar, thread-list, thread-search, message-list;
-// stock values from static/style/workspace.less and ui-darkside):
+// app/src/sheet.tsx, account-sidebar, thread-search; stock values from
+// static/style/workspace.less and ui-darkside):
 //   .sheet-toolbar, .sheet-toolbar-container, .toolbar-<Column>, .btn-toolbar,
-//   .thread-search-bar, .selection-bar, .column-<Column>, .account-sidebar,
-//   .outline-view .item, .item-count-box, .list-tabular-item, .thread-list,
-//   #message-list.
+//   .button-group, .thread-search-bar, .selection-bar, .column-RootSidebar,
+//   .account-sidebar, .outline-view .item, .item-count-box.
 
-body.modern-ui-theme {
+body.modern-ui-dark-chrome {
+
   // ---- Global toolbar --------------------------------------------------------
   // Opaque on purpose: .sheet-toolbar has no background of its own, so a
   // translucent border shows the light window background through it.
@@ -85,7 +84,7 @@ body.modern-ui-theme {
       background: rgba(255, 255, 255, 0.16);
     }
     &:focus-visible {
-      box-shadow: 0 0 0 2px fade(@modern-ui-accent, 60%);
+      box-shadow: 0 0 0 2px @modern-ui-accent-60;
     }
     &:disabled,
     &.disabled,
@@ -121,7 +120,7 @@ body.modern-ui-theme {
     }
     &:focus-within {
       background: rgba(255, 255, 255, 0.14);
-      border-color: fade(@modern-ui-accent, 70%);
+      border-color: @modern-ui-accent-70;
     }
     .suggestions {
       color: @modern-ui-text;
@@ -153,7 +152,7 @@ body.modern-ui-theme {
       }
     }
     .item.selected {
-      background: fade(@modern-ui-accent, 16%);
+      background: @modern-ui-accent-16;
       border-radius: 6px;
       color: #ffffff;
       .name {
@@ -170,7 +169,7 @@ body.modern-ui-theme {
 
   .outline-view .item .item-count-box {
     background: transparent;
-    box-shadow: inset 0 0 0 1px fade(@modern-ui-accent, 45%);
+    box-shadow: inset 0 0 0 1px @modern-ui-accent-45;
     color: @modern-ui-accent;
   }
   .outline-view .item .item-count-box.alt-count {
@@ -180,88 +179,5 @@ body.modern-ui-theme {
   }
   .outline-view .item-container.dropping .item {
     color: @modern-ui-accent;
-  }
-
-  // ---- Thread list -----------------------------------------------------------
-  .column-ThreadList,
-  .thread-list,
-  .thread-list .list-container,
-  .thread-list .scroll-region-content {
-    background: @modern-ui-list-bg;
-  }
-
-  .thread-list .list-tabular-item {
-    background-color: @modern-ui-list-bg;
-    border-bottom: 1px solid @modern-ui-border !important;
-    color: @modern-ui-text;
-
-    .participants,
-    .subject {
-      color: @modern-ui-text;
-    }
-    .snippet,
-    .timestamp {
-      color: @modern-ui-text-secondary;
-      opacity: 1;
-    }
-  }
-
-  // ui-darkside sets the hover color with !important.
-  .thread-list .list-tabular-item:hover {
-    background-color: #f1f5f9 !important;
-  }
-
-  .thread-list .list-item.focused,
-  .thread-list .list-item.selected,
-  .thread-list.handler-split .list-item.selected,
-  .thread-list .list-tabular-item.keyboard-cursor {
-    background: @modern-ui-selected-bg !important;
-    color: @modern-ui-text;
-  }
-  .thread-list .list-tabular-item.keyboard-cursor {
-    border-left-color: @modern-ui-accent;
-  }
-  // Selected rows keep dark text; the stock theme inverts them.
-  .thread-list.handler-split .list-item.selected {
-    .participants,
-    .subject {
-      color: @modern-ui-text;
-    }
-    .snippet,
-    .timestamp {
-      color: @modern-ui-text-secondary;
-    }
-  }
-  &.is-blurred .thread-list .list-item.focused,
-  &.is-blurred .thread-list .list-item.selected,
-  &.is-blurred .thread-list.handler-split .list-item.selected {
-    background: #eef2f6 !important;
-  }
-
-  .thread-list .list-tabular-item.unread .participants,
-  .thread-list .list-tabular-item.unread .subject {
-    font-weight: 600;
-  }
-
-  // ---- Message viewer -------------------------------------------------------
-  .column-MessageList,
-  .column-MessageListSidebar,
-  #message-list {
-    background: @modern-ui-surface;
-  }
-  .column-MessageList,
-  .column-MessageListSidebar {
-    border-left: 1px solid @modern-ui-border;
-  }
-  #message-list .message-subject-wrap,
-  #message-list .message-subject {
-    color: @modern-ui-text;
-  }
-  #message-list .message-item-wrap .message-item-white-wrap {
-    box-shadow: inset 0 0 0 1px @modern-ui-border;
-  }
-  #message-list .message-header .message-time,
-  #message-list .message-participants .participant-label {
-    color: @modern-ui-text-secondary;
   }
 }

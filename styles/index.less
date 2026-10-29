@@ -8,13 +8,16 @@
 // Conventions:
 //  - Classes owned by the plugin start with `modern-ui-`.
 //  - Selectors that reach into Mailspring's own markup are grouped in
-//    theme.less and the "Mailspring internals" sections below, each with the
+//    chrome.less, content.less and the "Mailspring internals" sections below, each with the
 //    source file it depends on. docs/compatibility.md lists them.
 //  - No dependency on the active theme's ui-variables, so the layout is the
 //    same under every theme.
 
 @import 'variables';
+@import 'accents';
 @import 'account-rail';
 @import 'avatars';
 @import 'folder-title';
-@import 'theme';
+@import 'chrome';
+@import 'content';
+@import 'settings-tab';

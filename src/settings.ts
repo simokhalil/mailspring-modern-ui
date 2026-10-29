@@ -1,50 +1,97 @@
-// User settings. Exported from lib/main as `config`, which Mailspring turns into
-// a config schema under the package name (app/src/package.ts). They have no
-// UI; set them in config.json, e.g. "mailspring-modern-ui": { "threadAvatars": false }.
-// Changes apply immediately, without restarting.
+import { ACCENT_PRESETS, DEFAULT_ACCENT } from './services/accents';
+
+// User settings, stored by Mailspring's own config system under the package
+// name ("mailspring-modern-ui.*" in config.json). Exported from lib/main as
+// `config`; app/src/package.ts registers it with AppEnv.config.setSchema, which
+// validates every value written. Edited in Preferences › Modern UI
+// (components/SettingsTab.tsx); every change applies immediately.
 
 export const PACKAGE_NAME = 'mailspring-modern-ui';
+
+// Preferences tab id; also what Actions.switchPreferencesTab expects.
+export const SETTINGS_TAB_ID = 'Modern UI';
+
+export const AVATAR_SIZES = [28, 32, 36, 40];
 
 export const config = {
   accountRail: {
     type: 'boolean',
     default: true,
-    title: 'Show the account rail to the left of the folder sidebar',
+  },
+  railShowAllAccounts: {
+    type: 'boolean',
+    default: true,
+  },
+  railUnreadBadges: {
+    type: 'boolean',
+    default: true,
   },
   accountIconStyle: {
     type: 'string',
     default: 'auto',
     enum: ['auto', 'provider', 'initials'],
-    title:
-      'Account icons: provider logo, initials, or auto (logo unless two accounts share a provider)',
   },
   threadAvatars: {
     type: 'boolean',
     default: true,
-    title: 'Show contact avatars in the thread list',
+  },
+  avatarSize: {
+    type: 'integer',
+    default: 36,
+    enum: AVATAR_SIZES,
   },
   folderTitle: {
     type: 'boolean',
     default: true,
-    title: 'Show the folder name above the thread list',
   },
-  theme: {
+  darkChrome: {
     type: 'boolean',
     default: true,
-    title: 'Apply the Modern UI colors to the toolbar, sidebar and lists',
   },
-  notificationDeleteAction: {
+  lightContent: {
     type: 'boolean',
     default: true,
-    title: 'Replace "Archive" with "Delete" (move to Trash) in new mail notifications',
+  },
+  accent: {
+    type: 'string',
+    default: DEFAULT_ACCENT,
+    enum: ACCENT_PRESETS.map((p) => p.id),
+  },
+  notificationAction: {
+    type: 'string',
+    default: 'trash',
+    enum: ['trash', 'archive'],
   },
 };
 
 export type SettingKey = keyof typeof config;
 
+export const SETTING_KEYS = Object.keys(config) as SettingKey[];
+
+function isValid(key: SettingKey, value: any) {
+  const schema: any = config[key];
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (schema.enum) {
+    return schema.enum.includes(value);
+  }
+  return schema.type === 'boolean' ? typeof value === 'boolean' : true;
+}
+
 export function getSetting(key: SettingKey): any {
   const value = AppEnv.config.get(`${PACKAGE_NAME}.${key}`);
-  return value === undefined || value === null ? config[key].default : value;
+  return isValid(key, value) ? value : config[key].default;
+}
+
+export function setSetting(key: SettingKey, value: any) {
+  AppEnv.config.set(`${PACKAGE_NAME}.${key}`, value);
+}
+
+export function resetSettings() {
+  for (const key of SETTING_KEYS) {
+    AppEnv.config.unset(`${PACKAGE_NAME}.${key}`);
+  }
 }
 
 export function observeSetting(key: SettingKey, callback: (value: any) => void): { dispose(): void } {

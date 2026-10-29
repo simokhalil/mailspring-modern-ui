@@ -1,0 +1,94 @@
+// Light thread list and reader colors (setting `lightContent`).
+//
+// Scoped under body.modern-ui-light-content, added by src/main.ts while the
+// setting is on. Inline reply composers are left alone, and the composer
+// window never loads this plugin.
+//
+// Mailspring internals targeted here (thread-list, message-list, ui-darkside):
+//   .column-ThreadList, .thread-list, .list-tabular-item, .list-item.selected,
+//   .column-MessageList, .column-MessageListSidebar, #message-list.
+
+body.modern-ui-light-content {
+  // ---- Thread list -----------------------------------------------------------
+  .column-ThreadList,
+  .thread-list,
+  .thread-list .list-container,
+  .thread-list .scroll-region-content {
+    background: @modern-ui-list-bg;
+  }
+
+  .thread-list .list-tabular-item {
+    background-color: @modern-ui-list-bg;
+    border-bottom: 1px solid @modern-ui-border !important;
+    color: @modern-ui-text;
+
+    .participants,
+    .subject {
+      color: @modern-ui-text;
+    }
+    .snippet,
+    .timestamp {
+      color: @modern-ui-text-secondary;
+      opacity: 1;
+    }
+  }
+
+  // ui-darkside sets the hover color with !important.
+  .thread-list .list-tabular-item:hover {
+    background-color: #f1f5f9 !important;
+  }
+
+  .thread-list .list-item.focused,
+  .thread-list .list-item.selected,
+  .thread-list.handler-split .list-item.selected,
+  .thread-list .list-tabular-item.keyboard-cursor {
+    background: @modern-ui-selected-bg !important;
+    color: @modern-ui-text;
+  }
+  .thread-list .list-tabular-item.keyboard-cursor {
+    border-left-color: @modern-ui-accent;
+  }
+  // Selected rows keep dark text; the stock theme inverts them.
+  .thread-list.handler-split .list-item.selected {
+    .participants,
+    .subject {
+      color: @modern-ui-text;
+    }
+    .snippet,
+    .timestamp {
+      color: @modern-ui-text-secondary;
+    }
+  }
+  &.is-blurred .thread-list .list-item.focused,
+  &.is-blurred .thread-list .list-item.selected,
+  &.is-blurred .thread-list.handler-split .list-item.selected {
+    background: #eef2f6 !important;
+  }
+
+  .thread-list .list-tabular-item.unread .participants,
+  .thread-list .list-tabular-item.unread .subject {
+    font-weight: 600;
+  }
+
+  // ---- Message viewer -------------------------------------------------------
+  .column-MessageList,
+  .column-MessageListSidebar,
+  #message-list {
+    background: @modern-ui-surface;
+  }
+  .column-MessageList,
+  .column-MessageListSidebar {
+    border-left: 1px solid @modern-ui-border;
+  }
+  #message-list .message-subject-wrap,
+  #message-list .message-subject {
+    color: @modern-ui-text;
+  }
+  #message-list .message-item-wrap .message-item-white-wrap {
+    box-shadow: inset 0 0 0 1px @modern-ui-border;
+  }
+  #message-list .message-header .message-time,
+  #message-list .message-participants .participant-label {
+    color: @modern-ui-text-secondary;
+  }
+}

@@ -2,7 +2,7 @@
   "name": "mailspring-modern-ui",
   "displayName": "Modern UI",
   "main": "./lib/main",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Airmail-inspired account rail, contact avatars, folder title and a Delete action in new-mail notifications for Mailspring.",
   "repository": {
     "type": "git",
