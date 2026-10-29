@@ -1,28 +1,10 @@
 import { React, Account } from 'mailspring-exports';
-import { RetinaImg } from 'mailspring-component-kit';
-import Avatar from './Avatar';
+import AccountAvatar from './AccountAvatar';
 import RailTooltip from './RailTooltip';
-import { initialsFor, sanitizeCssColor, strongColorsFor } from '../services/identity';
+import { AccountIconChoice, resolveAccountAppearance } from '../services/account-icons';
 
 const TOOLTIP_DELAY_MS = 350;
 let nextTooltipId = 0;
-
-// Providers whose logo ships inside Mailspring (static/images/preferences/
-// ic-settings-account-<provider>@2x.png). "imap" only has a generic icon, so
-// generic IMAP accounts use initials.
-const PROVIDER_LOGOS = new Set([
-  'gmail',
-  'office365',
-  'outlook',
-  'yahoo',
-  'icloud',
-  'fastmail',
-  'gmx',
-  'yandex',
-  'eas',
-]);
-
-export type AccountIconStyle = 'auto' | 'provider' | 'initials';
 
 interface AccountIconProps {
   // null renders the "All accounts" entry.
@@ -31,26 +13,14 @@ interface AccountIconProps {
   unread: number;
   label: string;
   description?: string | null;
-  // Whether another account uses the same provider. In "auto" mode, two Gmail
-  // accounts would otherwise get the same logo.
-  providerShared: boolean;
-  iconStyle: AccountIconStyle;
+  // The account's entry in the `accountIcons` setting, if any.
+  choice?: AccountIconChoice | null;
   onSelect: (account: Account | null) => void;
   onContextMenu: (account: Account | null) => void;
 }
 
 interface AccountIconState {
   tooltipAt: { left: number; top: number } | null;
-}
-
-function accountInitials(account: Account) {
-  const label = (account.label || '').trim();
-  // A custom label ("Work", "Perso") identifies the account better than the
-  // owner's name, which is usually the same for all of them.
-  if (label && !label.includes('@')) {
-    return initialsFor(label, account.emailAddress);
-  }
-  return initialsFor(null, account.emailAddress);
 }
 
 function AllAccountsGlyph() {
@@ -126,7 +96,7 @@ export default class AccountIcon extends React.PureComponent<AccountIconProps, A
   };
 
   private renderVisual() {
-    const { account, iconStyle, providerShared } = this.props;
+    const { account, choice } = this.props;
     if (!account) {
       return (
         <span className="modern-ui-account-icon__visual modern-ui-account-icon__visual--all">
@@ -134,33 +104,10 @@ export default class AccountIcon extends React.PureComponent<AccountIconProps, A
         </span>
       );
     }
-
-    // Account has no picture of its own in Mailspring's model, so the order is:
-    // the provider logo bundled with Mailspring, then initials.
-    const hasLogo = PROVIDER_LOGOS.has(account.provider);
-    const useLogo =
-      hasLogo && (iconStyle === 'provider' || (iconStyle === 'auto' && !providerShared));
-    if (useLogo) {
-      return (
-        <span className="modern-ui-account-icon__visual modern-ui-account-icon__visual--logo">
-          <RetinaImg
-            name={`ic-settings-account-${account.provider}.png`}
-            fallback="ic-settings-account-imap.png"
-            mode={RetinaImg.Mode.ContentPreserve}
-            alt=""
-          />
-        </span>
-      );
-    }
-
-    const colors = strongColorsFor((account.emailAddress || account.id || '').toLowerCase());
-    // Respect the color picked for the account in Preferences > Accounts.
-    const custom = sanitizeCssColor(account.color);
     return (
-      <Avatar
+      <AccountAvatar
         className="modern-ui-account-icon__visual"
-        initials={accountInitials(account)}
-        colors={custom ? { background: custom, foreground: '#FFFFFF' } : colors}
+        appearance={resolveAccountAppearance(account, choice)}
       />
     );
   }

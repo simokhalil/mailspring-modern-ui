@@ -1,0 +1,249 @@
+// Account icons: the round avatar shared by the rail and the settings editor
+// (src/components/AccountAvatar.tsx), and the editor itself
+// (src/components/AccountIconsEditor.tsx).
+
+.modern-ui-account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+// Lucide / Simple Icons glyph, drawn in currentColor on the chosen background.
+.modern-ui-account-avatar--glyph .modern-ui-account-avatar__glyph {
+  width: 56%;
+  height: 56%;
+}
+
+// Mailspring's provider logos are drawn for light backgrounds; slightly larger
+// than the circle, as tuned for the rail (36px logo in a 34px circle).
+.modern-ui-account-avatar--logo {
+  background: #ffffff;
+
+  img {
+    width: 106% !important;
+    height: 106% !important;
+    object-fit: contain;
+  }
+}
+
+// ---- Editor --------------------------------------------------------------
+
+.modern-ui-account-icons-section {
+  margin-top: 10px;
+}
+
+.modern-ui-icon-editor {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.modern-ui-icon-editor__accounts {
+  flex: 0 0 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modern-ui-icon-editor__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  &.is-selected {
+    background: ~'color-mix(in srgb, var(--modern-ui-accent) 14%, transparent)';
+  }
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px @modern-ui-accent-60;
+  }
+}
+
+.modern-ui-icon-editor__account-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.modern-ui-icon-editor__account-text,
+.modern-ui-icon-editor__preview-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.modern-ui-icon-editor__account-label {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modern-ui-icon-editor__account-email {
+  overflow: hidden;
+  font-size: 11px;
+  opacity: 0.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modern-ui-icon-editor__panel {
+  flex: 1;
+  min-width: 0;
+}
+
+.modern-ui-icon-editor__preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+// The preview sits on a piece of rail, at rail size, so it shows exactly
+// what the rail will.
+.modern-ui-icon-editor__preview-rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: @modern-ui-rail-bg;
+}
+
+.modern-ui-icon-editor__preview-avatar {
+  width: @modern-ui-rail-icon;
+  height: @modern-ui-rail-icon;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.modern-ui-icon-editor__reset {
+  margin-left: auto;
+}
+
+.modern-ui-icon-editor__label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.modern-ui-icon-editor__colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.modern-ui-color-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: default;
+
+  &.is-selected {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #1f2937;
+  }
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px @modern-ui-accent;
+  }
+}
+
+.modern-ui-color-swatch--auto {
+  background: #ffffff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.modern-ui-icon-editor__search {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 14px;
+}
+
+.modern-ui-icon-editor__group {
+  margin-bottom: 14px;
+}
+
+.modern-ui-icon-editor__group-title {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.modern-ui-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 6px;
+}
+
+.modern-ui-icon-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  cursor: default;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+  &.is-selected {
+    border-color: @modern-ui-accent;
+    background: ~'color-mix(in srgb, var(--modern-ui-accent) 14%, transparent)';
+    color: #0f172a;
+  }
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px @modern-ui-accent-60;
+  }
+}
+
+.modern-ui-icon-tile__glyph {
+  width: 20px;
+  height: 20px;
+}
+
+.modern-ui-icon-editor__empty {
+  padding: 16px 0;
+  opacity: 0.6;
+}
+
+.modern-ui-icon-editor__credits {
+  margin-top: 6px;
+}

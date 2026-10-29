@@ -12,10 +12,19 @@ const FR: { [en: string]: string } = {
   'Show the "All Accounts" entry': 'Afficher l’entrée « Tous les comptes »',
   'Show unread badges': 'Afficher les badges de messages non lus',
   'Account icons': 'Icônes des comptes',
-  'Automatic (logo, initials when two accounts share a provider)':
-    'Automatique (logo, initiales si deux comptes ont le même fournisseur)',
-  'Provider logo': 'Logo du fournisseur',
-  Initials: 'Initiales',
+  Accounts: 'Comptes',
+  'Background color': 'Couleur de fond',
+  Automatic: 'Automatique',
+  'Custom icon': 'Icône personnalisée',
+  'Automatic icon (provider logo, else initials)':
+    'Icône automatique (logo du fournisseur, sinon initiales)',
+  Reset: 'Réinitialiser',
+  'Search icons…': 'Rechercher une icône…',
+  Icons: 'Icônes',
+  Brands: 'Marques',
+  'No icon matches this search.': 'Aucune icône ne correspond à cette recherche.',
+  'Icons: Lucide (ISC license) and Simple Icons (CC0). Logos are trademarks of their owners.':
+    'Icônes : Lucide (licence ISC) et Simple Icons (CC0). Les logos sont des marques de leurs propriétaires.',
   'Message list': 'Liste des messages',
   'Show contact avatars': 'Afficher les avatars des contacts',
   'Avatar size': 'Taille des avatars',

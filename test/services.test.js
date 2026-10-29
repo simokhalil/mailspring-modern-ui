@@ -159,3 +159,112 @@ test('title: custom folders, starred/drafts, search, nothing', () => {
   const single = { ...ctx, accounts: [ctx.accounts[0]] };
   assert.equal(folderTitleFor(persp('Inbox', ['a1'], [{ role: 'inbox', path: 'INBOX' }], 'inbox'), single).subtitle, null);
 });
+
+const icons = lib('services/account-icons');
+const iconData = lib('icons/icon-data');
+
+test('icon set: 50 to 100 icons, unique ids, only safe SVG elements', () => {
+  const total = iconData.LUCIDE_ICONS.length + iconData.SIMPLE_ICONS.length;
+  assert.ok(total >= 50 && total <= 100, `${total} icons`);
+  const ids = (list) => list.map((i) => i.id);
+  assert.equal(new Set(ids(iconData.LUCIDE_ICONS)).size, iconData.LUCIDE_ICONS.length);
+  assert.equal(new Set(ids(iconData.SIMPLE_ICONS)).size, iconData.SIMPLE_ICONS.length);
+  const allowed = new Set(['path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse']);
+  for (const icon of iconData.LUCIDE_ICONS) {
+    for (const [tag, attrs] of icon.nodes) {
+      assert.ok(allowed.has(tag), `${icon.id}: <${tag}>`);
+      assert.ok(!Object.keys(attrs).some((a) => /^on/i.test(a) || a === 'href'), `${icon.id}: unsafe attr`);
+    }
+  }
+  for (const icon of iconData.SIMPLE_ICONS) {
+    assert.match(icon.hex, /^#[0-9A-F]{6}$/i);
+    assert.match(icon.path, /^[MmLlHhVvCcSsQqTtAaZz0-9.,\s-]+$/);
+  }
+  for (const id of ['briefcase', 'house', 'mail']) assert.ok(icons.findIcon('lucide', id), id);
+  assert.ok(icons.findIcon('simple-icons', 'gmail'));
+});
+
+test('stored map: malformed entries are dropped, colors sanitized', () => {
+  assert.deepEqual(
+    icons.normalizeAccountIcons({
+      a1: { icon: 'briefcase', source: 'lucide', backgroundColor: '#27B8C7' },
+      a2: { icon: 'gmail', source: 'simple-icons' },
+      a3: { icon: 'x', source: 'font-awesome', backgroundColor: 'red; x: url(y)' },
+      a4: 'nope',
+      a5: { backgroundColor: '#04876A' },
+    }),
+    {
+      a1: { icon: 'briefcase', source: 'lucide', backgroundColor: '#27B8C7' },
+      a2: { icon: 'gmail', source: 'simple-icons' },
+      a5: { backgroundColor: '#04876A' },
+    }
+  );
+  assert.deepEqual(icons.normalizeAccountIcons(null), {});
+  assert.deepEqual(icons.normalizeAccountIcons([1, 2]), {});
+});
+
+const gmail = { id: 'g1', provider: 'gmail', label: 'me@gmail.com', emailAddress: 'me@gmail.com' };
+const imap = { id: 'i1', provider: 'imap', label: 'Perso', emailAddress: 'me@perso.fr' };
+
+test('appearance: chosen icon on chosen, brand or account color', () => {
+  const lucide = icons.resolveAccountAppearance(imap, { icon: 'briefcase', source: 'lucide', backgroundColor: '#27B8C7' });
+  assert.equal(lucide.kind, 'lucide');
+  assert.equal(lucide.icon.id, 'briefcase');
+  assert.equal(lucide.background, '#27B8C7');
+
+  const brand = icons.resolveAccountAppearance(imap, { icon: 'gmail', source: 'simple-icons' });
+  assert.equal(brand.kind, 'simple-icons');
+  assert.equal(brand.background, iconData.SIMPLE_ICONS.find((i) => i.id === 'gmail').hex, 'brand color by default');
+
+  const auto = icons.resolveAccountAppearance(imap, { icon: 'house', source: 'lucide' });
+  assert.match(auto.background, /^hsl\(/, 'account color when none chosen');
+  const prefColor = icons.resolveAccountAppearance({ ...imap, color: '#112233' }, { icon: 'house', source: 'lucide' });
+  assert.equal(prefColor.background, '#112233', 'Mailspring account color first');
+});
+
+test('appearance: defaults and fallbacks', () => {
+  assert.deepEqual(icons.resolveAccountAppearance(gmail, undefined), { kind: 'provider', provider: 'gmail', background: null });
+  const init = icons.resolveAccountAppearance(imap, null);
+  assert.equal(init.kind, 'initials');
+  assert.equal(init.initials, 'P');
+
+  // An icon that no longer exists in the bundled set: back to the default,
+  // keeping the chosen color.
+  const gone = icons.resolveAccountAppearance(imap, { icon: 'removed-icon', source: 'lucide', backgroundColor: '#DC2626' });
+  assert.equal(gone.kind, 'initials');
+  assert.equal(gone.background, '#DC2626');
+  const goneLogo = icons.resolveAccountAppearance(gmail, { icon: 'removed', source: 'simple-icons' });
+  assert.equal(goneLogo.kind, 'provider');
+});
+
+test('appearance: glyph color stays readable', () => {
+  assert.equal(icons.foregroundFor('#1F2937'), '#FFFFFF');
+  assert.equal(icons.foregroundFor('#27B8C7'), '#FFFFFF');
+  assert.equal(icons.foregroundFor('#FFE01B'), '#1F2937', 'light brand yellow gets dark glyph');
+  assert.equal(icons.foregroundFor('hsl(1, 2%, 3%)'), '#FFFFFF');
+});
+
+test('search: names, English tags, French keywords, accents ignored', () => {
+  const ids = (q) => {
+    const r = icons.searchIcons(q);
+    return [...r.lucide.map((i) => i.id), ...r.simple.map((i) => i.id)];
+  };
+  assert.ok(ids('travail').includes('briefcase'));
+  assert.ok(ids('work').includes('briefcase'));
+  assert.ok(ids('ecole').includes('graduation-cap'), 'école without accent');
+  assert.ok(ids('GMAIL').includes('gmail'));
+  assert.deepEqual(ids('zzzz'), []);
+  assert.equal(ids('').length, iconData.LUCIDE_ICONS.length + iconData.SIMPLE_ICONS.length);
+});
+
+test('saving one account: keyed by id, empty choices and removed accounts pruned', () => {
+  const current = { a1: { icon: 'mail', source: 'lucide' }, gone: { icon: 'x', source: 'simple-icons' } };
+  const next = icons.withAccountChoice(current, 'a2', { icon: 'gmail', source: 'simple-icons', backgroundColor: '#EA4335' }, ['a1', 'a2']);
+  assert.deepEqual(next, {
+    a1: { icon: 'mail', source: 'lucide' },
+    a2: { icon: 'gmail', source: 'simple-icons', backgroundColor: '#EA4335' },
+  });
+  assert.deepEqual(icons.withAccountChoice(next, 'a1', null, ['a1', 'a2']), { a2: next.a2 });
+  assert.deepEqual(icons.withAccountChoice(next, 'a1', {}, ['a1', 'a2']), { a2: next.a2 });
+  assert.equal(current.gone.icon, 'x', 'input not mutated');
+});

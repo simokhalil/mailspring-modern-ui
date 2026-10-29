@@ -8,7 +8,8 @@ import {
   FocusedPerspectiveStore,
   ThreadCountsStore,
 } from 'mailspring-exports';
-import AccountIcon, { AccountIconStyle } from './AccountIcon';
+import AccountIcon from './AccountIcon';
+import { AccountIconMap, normalizeAccountIcons } from '../services/account-icons';
 import {
   ALL_ACCOUNTS,
   addAccount,
@@ -28,13 +29,13 @@ interface AccountRailState {
   accounts: Account[];
   selection: string;
   unread: { [accountId: string]: number };
-  iconStyle: AccountIconStyle;
+  accountIcons: AccountIconMap;
   showAllAccounts: boolean;
   showBadges: boolean;
 }
 
 // Settings the rail reads; it re-renders when any of them changes.
-const RAIL_SETTINGS: SettingKey[] = ['accountIconStyle', 'railShowAllAccounts', 'railUnreadBadges'];
+const RAIL_SETTINGS: SettingKey[] = ['accountIcons', 'railShowAllAccounts', 'railUnreadBadges'];
 
 function unreadInboxCount(account: Account): number {
   const inbox = CategoryStore.getInboxCategory(account);
@@ -47,11 +48,6 @@ function unreadInboxCount(account: Account): number {
 function sameUnread(a: AccountRailState['unread'], b: AccountRailState['unread']) {
   const keys = Object.keys(a);
   return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
-}
-
-function iconStyleSetting(): AccountIconStyle {
-  const value = getSetting('accountIconStyle');
-  return value === 'provider' || value === 'initials' ? value : 'auto';
 }
 
 // The vertical account selector. It is injected into the RootSidebar column
@@ -112,7 +108,7 @@ export default class AccountRail extends React.Component<Record<string, unknown>
       const prev = this.state;
       const changed =
         next.selection !== prev.selection ||
-        next.iconStyle !== prev.iconStyle ||
+        JSON.stringify(next.accountIcons) !== JSON.stringify(prev.accountIcons) ||
         next.showAllAccounts !== prev.showAllAccounts ||
         next.showBadges !== prev.showBadges ||
         next.accounts.length !== prev.accounts.length ||
@@ -138,7 +134,7 @@ export default class AccountRail extends React.Component<Record<string, unknown>
       accounts,
       selection: currentSelection(),
       unread,
-      iconStyle: iconStyleSetting(),
+      accountIcons: normalizeAccountIcons(getSetting('accountIcons')),
       showAllAccounts: getSetting('railShowAllAccounts') !== false,
       showBadges: getSetting('railUnreadBadges') !== false,
     };
@@ -163,17 +159,12 @@ export default class AccountRail extends React.Component<Record<string, unknown>
   };
 
   render() {
-    const { accounts, selection, unread, iconStyle, showAllAccounts, showBadges } = this.state;
+    const { accounts, selection, unread, accountIcons, showAllAccounts, showBadges } = this.state;
     if (accounts.length === 0) {
       return null;
     }
     const multiple = accounts.length > 1;
     const showAllEntry = multiple && showAllAccounts;
-    const providerCounts: { [provider: string]: number } = {};
-    accounts.forEach((a) => {
-      providerCounts[a.provider] = (providerCounts[a.provider] || 0) + 1;
-    });
-
     return (
       <nav className="modern-ui-account-rail" aria-label={localized('Accounts')}>
         <div className="modern-ui-account-rail__list">
@@ -183,8 +174,6 @@ export default class AccountRail extends React.Component<Record<string, unknown>
               label={localized('All Accounts')}
               selected={selection === ALL_ACCOUNTS}
               unread={showBadges ? unread[ALL_ACCOUNTS] || 0 : 0}
-              providerShared={false}
-              iconStyle={iconStyle}
               onSelect={this.onSelect}
               onContextMenu={this.onContextMenu}
             />
@@ -198,8 +187,7 @@ export default class AccountRail extends React.Component<Record<string, unknown>
               description={account.label !== account.emailAddress ? account.emailAddress : null}
               selected={selection === account.id || (!multiple && selection === ALL_ACCOUNTS)}
               unread={showBadges ? unread[account.id] || 0 : 0}
-              providerShared={providerCounts[account.provider] > 1}
-              iconStyle={iconStyle}
+              choice={accountIcons[account.id]}
               onSelect={this.onSelect}
               onContextMenu={this.onContextMenu}
             />

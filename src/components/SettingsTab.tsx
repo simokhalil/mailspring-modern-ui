@@ -11,6 +11,7 @@ import {
 import { ACCENT_PRESETS } from '../services/accents';
 import { notificationActionStatus } from '../services/notification-delete-action';
 import { t } from '../i18n';
+import AccountIconsEditor from './AccountIconsEditor';
 
 type Values = { [K in SettingKey]: any };
 
@@ -136,16 +137,6 @@ export default class SettingsTab extends React.Component<Record<string, unknown>
               {this.renderCheckbox('accountRail', t('Show the account rail'))}
               {this.renderCheckbox('railShowAllAccounts', t('Show the "All Accounts" entry'), railOff)}
               {this.renderCheckbox('railUnreadBadges', t('Show unread badges'), railOff)}
-              {this.renderSelect(
-                'accountIconStyle',
-                t('Account icons'),
-                [
-                  { value: 'auto', label: t('Automatic (logo, initials when two accounts share a provider)') },
-                  { value: 'provider', label: t('Provider logo') },
-                  { value: 'initials', label: t('Initials') },
-                ],
-                railOff
-              )}
             </section>
             <section>
               <h6>{t('Message list')}</h6>
@@ -193,6 +184,10 @@ export default class SettingsTab extends React.Component<Record<string, unknown>
             </section>
           </div>
         </div>
+        <section className="modern-ui-account-icons-section">
+          <h6>{t('Account icons')}</h6>
+          <AccountIconsEditor />
+        </section>
       </div>
     );
   }

@@ -28,12 +28,11 @@ Mailspring, `package.json` avec `engines.mailspring` et `windowTypes`).
 - 64 px, fond `#202833`, à gauche de la sidebar native, dans la même colonne :
   la barre d'outils, les boutons de fenêtre macOS et le redimensionnement restent natifs.
 - Entrée « Tous les comptes » (si plusieurs comptes) puis un rond par compte.
-- Icône d'un compte : logo du fournisseur **déjà présent dans Mailspring**
-  (Gmail, Outlook, Office 365, iCloud, Yahoo, Fastmail, GMX, Yandex, Exchange),
-  sinon initiales sur une couleur déterministe, ou la couleur choisie dans
-  Préférences › Comptes. Le modèle `Account` de Mailspring n'a pas d'avatar.
-  En mode `auto`, deux comptes du même fournisseur (vos deux Gmail) passent en
-  initiales pour rester distinguables. Rien n'est téléchargé.
+- Icône d'un compte : celle choisie dans Préférences › Modern UI › Icônes des
+  comptes ; sinon le logo du fournisseur **déjà présent dans Mailspring**
+  (Gmail, Outlook, Office 365, iCloud, Yahoo, Fastmail, GMX, Yandex, Exchange) ;
+  sinon les initiales sur une couleur déterministe, ou la couleur choisie dans
+  Préférences › Comptes. Rien n'est téléchargé.
 - Indicateur de sélection (barre + anneau turquoise `#27B8C7`), survol, focus clavier.
 - Info-bulle : libellé + adresse.
 - Badge : non-lus de la boîte de réception (somme pour « Tous les comptes »), plafonné à 99+.
@@ -126,7 +125,6 @@ l'onglet reste disponible quand le rail est désactivé.
 | Rail des comptes | Afficher le rail | **oui** / non |
 | | Entrée « Tous les comptes » | **oui** / non |
 | | Badges de non-lus | **oui** / non |
-| | Icônes des comptes | **automatique** / logo / initiales |
 | Liste des messages | Avatars des contacts | **oui** / non |
 | | Taille des avatars | 28 / 32 / **36** / 40 px |
 | | Titre du dossier | **oui** / non |
@@ -134,12 +132,41 @@ l'onglet reste disponible quand le rail est désactivé.
 | | Couleurs Modern UI pour la liste et la lecture | **oui** / non |
 | | Couleur d'accent | **turquoise**, bleu, indigo, violet, rose, orange, vert |
 | Notifications | Second bouton | **Supprimer (Corbeille)** / Archiver (natif) |
+| Icônes des comptes | Icône et couleur de fond, par compte | **automatique** (logo du fournisseur, sinon initiales) ; 64 icônes Lucide, 36 logos Simple Icons, 12 couleurs |
 
 Chaque changement s'applique immédiatement, sans redémarrer. Les valeurs sont
 enregistrées par le système de configuration de Mailspring (`AppEnv.config`,
 validé par le schéma exporté par le plugin) dans `config.json`, sous la clé
 `mailspring-modern-ui`. Le bouton « Rétablir les réglages par défaut » les efface.
 Les préférences natives de Mailspring ne sont pas modifiées.
+
+### Icônes des comptes
+
+Section en bas de l'onglet : la liste des comptes à gauche ; à droite,
+l'aperçu (sur un morceau de rail, à la taille réelle), les couleurs de fond
+(« A » = automatique : couleur de la marque pour un logo, couleur du compte
+sinon), une recherche (nom, mots-clés anglais et français, sans accents) et
+les deux grilles. Chaque clic s'applique au rail immédiatement ;
+« Réinitialiser » revient à l'icône automatique.
+
+Les choix sont enregistrés par identifiant de compte Mailspring (pas par
+position), dans `mailspring-modern-ui.accountIcons` :
+
+```json
+"accountIcons": {
+  "cf55791f": { "icon": "briefcase", "source": "lucide", "backgroundColor": "#04876A" },
+  "d0db3624": { "icon": "gmail", "source": "simple-icons" }
+}
+```
+
+- Les comptes Mailspring ne sont pas modifiés.
+- Une icône introuvable (supprimée d'une version future du plugin) revient à
+  l'icône automatique en gardant la couleur choisie.
+- Un compte supprimé disparaît de la liste ; son entrée est nettoyée au
+  prochain changement d'icône. Un compte ajouté a l'icône automatique.
+- Simple Icons ne contient plus les marques retirées à la demande de leurs
+  propriétaires (Microsoft/Outlook, Yahoo, Slack, LinkedIn, Amazon…). Pour
+  Outlook et Yahoo, le logo intégré à Mailspring reste l'icône automatique.
 
 Notes :
 - Si l'entrée « Tous les comptes » est masquée, la vue unifiée reste accessible
@@ -149,8 +176,9 @@ Notes :
   réglage est grisé avec une explication.
 - L'onglet utilise l'icône générique des Préférences : Mailspring ne cherche
   les icônes d'onglet que dans ses propres ressources.
-- Les clés `theme` et `notificationDeleteAction` d'une version précédente sont
-  ignorées (remplacées par `darkChrome`/`lightContent` et `notificationAction`).
+- Les clés `theme`, `notificationDeleteAction` et `accountIconStyle` des versions
+  précédentes sont ignorées (remplacées par `darkChrome`/`lightContent`,
+  `notificationAction` et `accountIcons`).
 
 ## Structure
 
@@ -159,8 +187,10 @@ package.json            main ./lib/main, engines.mailspring, windowTypes, syncIn
 src/main.ts             activate/deactivate, activation de chaque fonctionnalité
 src/settings.ts         schéma de réglages (export `config`), lecture/écriture
 src/i18n.ts             textes du plugin (anglais, français)
+src/icons/icon-data.ts  icônes embarquées, GÉNÉRÉ par scripts/build-icons.js
 src/components/         AccountRail, AccountIcon, RailTooltip, Avatar, ThreadAvatar,
-                        FolderTitle, SettingsTab (onglet des Préférences)
+                        FolderTitle, SettingsTab (onglet des Préférences),
+                        AccountIconsEditor, AccountAvatar, IconGlyph
 src/services/           navigation comptes, choix du contact, initiales/couleurs,
                         photos vCard, cache photos, titre, largeur de colonne,
                         accents, notifications
@@ -169,13 +199,26 @@ styles/index.less       point d'entrée chargé par Mailspring (+ partiels : rai
 lib/                    JavaScript compilé, livré
 types/mailspring/       déclarations TypeScript de l'API Mailspring utilisée
 test/                   tests (node:test) avec un runtime Mailspring simulé
-scripts/                install.sh, uninstall.sh, verify-package.js
+scripts/                install.sh, uninstall.sh, verify-package.js, build-icons.js
+THIRD_PARTY_NOTICES.md  licences Lucide (ISC) et Simple Icons (CC0), marques
 docs/compatibility.md   API utilisées, détails internes, risques
 ```
 
 React n'est pas embarqué : le plugin utilise celui de Mailspring via
 `mailspring-exports` (`react`, `react-dom` et `react-test-renderer` ne servent
 qu'aux tests). Aucun module `node_modules` n'est nécessaire à l'exécution.
+
+## Licences des icônes
+
+- **Lucide** : licence ISC (avec des icônes issues de Feather, MIT). Texte
+  complet dans `THIRD_PARTY_NOTICES.md`, livré avec le plugin.
+- **Simple Icons** : CC0 1.0. Les logos restent des marques de leurs
+  propriétaires ; ils servent seulement à reconnaître vos comptes. Liens vers
+  les chartes de marque dans `THIRD_PARTY_NOTICES.md`.
+- Seules les 100 icônes listées dans `scripts/build-icons.js` sont copiées
+  (72 Ko de source) ; les bibliothèques sont des dépendances de développement,
+  jamais chargées à l'exécution. Pour changer la sélection : modifier les
+  listes puis `npm run icons`.
 
 ## Développement
 
@@ -196,7 +239,7 @@ npm run verify
 | `tsc` (TypeScript 5.9, strict sur les variables inutilisées) | ✅ sans erreur |
 | Compilation LESS avec Less 3.13.1 (version embarquée par Mailspring 1.26.2) | ✅ |
 | `scripts/verify-package.js` : nom, `engines`, `windowTypes`, point d'entrée, exports, `lib/` à jour, aucun `require` hors runtime Mailspring | ✅ |
-| 33 tests `node:test` : services purs ; 17 qui chargent `lib/` contre un runtime Mailspring simulé (enregistrement, rendu React 17, navigation, stores, désabonnements, réglages à chaud, onglet des Préférences, notifications) ; 3 qui compilent le LESS et vérifient accents, tailles d'avatar et portée des règles de thème | ✅ 33/33 |
+| 42 tests `node:test` : services purs (dont icônes : jeu embarqué, résolution et fallbacks, recherche, persistance) ; 19 qui chargent `lib/` contre un runtime Mailspring simulé (enregistrement, rendu React 17, navigation, stores, désabonnements, réglages à chaud, onglet des Préférences, éditeur d'icônes, notifications) ; 3 qui compilent le LESS | ✅ 42/42 |
 | `install.sh` / `uninstall.sh` vers un dossier temporaire (annulation, copie, suppression) | ✅ |
 | Chargement dans Mailspring 1.26.2 (votre installation) | ✅ actif, aucune erreur console |
 
@@ -227,6 +270,9 @@ l'installation principale. La validation visuelle se fait sur l'installation ré
    l'accent, la taille des avatars, masquer « Tous les comptes » : effet
    immédiat. Désactiver le rail : l'onglet reste dans les Préférences.
    Décocher les deux options d'Apparence : couleurs d'origine immédiatement.
+   Icônes des comptes : choisir une icône et une couleur pour un compte, le
+   rail change aussitôt ; relancer Mailspring, le choix est conservé ;
+   « Réinitialiser » rend l'icône automatique.
 7. **Désinstallation** : désinstaller et relancer → interface native complète.
 
 ## Limites

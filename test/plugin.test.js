@@ -51,7 +51,8 @@ test('activate registers every feature in the right place; deactivate removes al
   const { PreferencesUIStore } = rt.modules['mailspring-exports'];
   assert.deepEqual(PreferencesUIStore.tabs.map((tab) => [tab.tabId, tab.displayName]), [['Modern UI', 'Modern UI']]);
   assert.equal(typeof main.config, 'object', 'config schema exported for Mailspring');
-  assert.equal(main.config.accountIconStyle.default, 'auto');
+  assert.deepEqual(main.config.accountIcons, { type: 'object', default: {} });
+  assert.equal(main.config.accountIconStyle, undefined, 'generic icon style setting replaced');
 
   main.deactivate();
   assert.equal(rt.modules['mailspring-exports'].ComponentRegistry.entries().length, 0);
@@ -134,13 +135,17 @@ test('account rail: entries, icons, badges, selection', () => {
   );
   assert.ok(icons[0].props.className.includes('is-selected'), 'unified view selected');
 
-  // Outlook is the only Outlook account -> bundled logo. The two Gmail
-  // accounts would look identical -> initials. IMAP has no logo -> initials.
+  // No custom icon: Mailspring's bundled provider logo (Outlook, Gmail x2);
+  // generic IMAP has none -> initials.
   const retina = r.root.findAll((n) => n.type === 'img' && n.props['data-retina']);
-  assert.deepEqual(retina.map((n) => n.props['data-retina']), ['ic-settings-account-outlook.png']);
+  assert.deepEqual(retina.map((n) => n.props['data-retina']), [
+    'ic-settings-account-outlook.png',
+    'ic-settings-account-gmail.png',
+    'ic-settings-account-gmail.png',
+  ]);
   const initials = byClass(r.root, 'modern-ui-avatar').map((n) => n.props.children);
-  assert.deepEqual(initials, ['M', 'P', 'JD']);
-  const perso = byClass(r.root, 'modern-ui-avatar')[1];
+  assert.deepEqual(initials, ['P']);
+  const perso = byClass(r.root, 'modern-ui-avatar')[0];
   assert.equal(perso.props.style.backgroundColor, '#ff0000', 'account color from preferences');
 
   const badges = byClass(r.root, 'modern-ui-account-icon__badge').map((n) => n.props.children);
@@ -189,8 +194,7 @@ test('account rail: clicking navigates through Mailspring actions and follows th
     await tick(10);
   });
   assert.equal(icons().length, 4);
-  // The remaining Gmail account is now unique -> its logo.
-  assert.ok(r.root.findAll((n) => n.props && n.props['data-retina'] === 'ic-settings-account-gmail.png').length === 1);
+  assert.equal(r.root.findAll((n) => n.props && n.props['data-retina'] === 'ic-settings-account-gmail.png').length, 1);
 
   // "+" adds an account; the context menu offers Add / Manage.
   byClass(r.root, 'modern-ui-account-rail__add')[0].props.onClick();
@@ -478,7 +482,13 @@ test('Preferences tab: native markup, French labels, writes through AppEnv.confi
     r = TestRenderer.create(React.createElement(SettingsTab, { accountId: null }));
   });
   const headings = r.root.findAllByType('h6').map((h) => h.props.children);
-  assert.deepEqual(headings, ['Rail des comptes', 'Liste des messages', 'Apparence', 'Notifications']);
+  assert.deepEqual(headings, [
+    'Rail des comptes',
+    'Liste des messages',
+    'Apparence',
+    'Notifications',
+    'Icônes des comptes',
+  ]);
   const input = (key) => r.root.find((n) => n.props.id === `modern-ui-setting-${key}`);
 
   // Defaults shown.
@@ -502,7 +512,6 @@ test('Preferences tab: native markup, French labels, writes through AppEnv.confi
   // elsewhere (config.json) show up immediately.
   act(() => rt.AppEnv.config.set('mailspring-modern-ui.accountRail', false));
   assert.equal(input('railShowAllAccounts').props.disabled, true);
-  assert.equal(input('accountIconStyle').props.disabled, true);
   assert.equal(input('threadAvatars').props.disabled, false);
 
   // Restore defaults clears every stored value.
@@ -556,4 +565,89 @@ test('English when Mailspring is in English', () => {
   const r = TestRenderer.create(React.createElement(SettingsTab));
   assert.equal(r.root.findAllByType('h6')[0].props.children, 'Account rail');
   r.unmount();
+});
+
+test('rail: custom icons apply live and survive a reload of the setting', async () => {
+  const rt = install();
+  setupAccounts(rt);
+  const AccountRail = rt.lib('components/AccountRail').default;
+  let r;
+  act(() => {
+    r = TestRenderer.create(React.createElement(AccountRail));
+  });
+  await act(async () => {
+    rt.AppEnv.config.set('mailspring-modern-ui.accountIcons', {
+      a2: { icon: 'briefcase', source: 'lucide', backgroundColor: '#04876A' },
+      a3: { icon: 'proton', source: 'simple-icons' },
+    });
+    await tick(10);
+  });
+  const glyphs = byClass(r.root, 'modern-ui-account-avatar--glyph');
+  assert.equal(glyphs.length, 2);
+  assert.equal(glyphs[0].props.style.backgroundColor, '#04876A');
+  assert.equal(glyphs[0].findAllByType('rect').length, 1, 'Lucide briefcase drawn as SVG');
+  assert.equal(glyphs[1].findAllByType('path').length, 1, 'Simple Icons logo drawn as SVG');
+  // a1 (Outlook) and a4 (Gmail) untouched: their provider logos.
+  assert.equal(r.root.findAll((n) => n.type === 'img' && n.props['data-retina']).length, 2);
+  act(() => r.unmount());
+});
+
+test('icons editor: lists accounts, edits the selected one, resets, follows accounts', async () => {
+  const rt = install();
+  setupAccounts(rt);
+  const Editor = rt.lib('components/AccountIconsEditor').default;
+  let r;
+  act(() => {
+    r = TestRenderer.create(React.createElement(Editor));
+  });
+  const accounts = () => r.root.findAll((n) => n.props.role === 'option');
+  assert.equal(accounts().length, 4);
+  assert.equal(accounts()[0].props['aria-selected'], true);
+
+  act(() => accounts()[2].props.onClick()); // "Perso" (a3)
+  const tile = (title) => r.root.find((n) => n.props.className && String(n.props.className).startsWith('modern-ui-icon-tile') && n.props.title === title);
+  act(() => tile('Briefcase').props.onClick());
+  assert.deepEqual(rt.state.config['mailspring-modern-ui.accountIcons'], { a3: { icon: 'briefcase', source: 'lucide' } });
+  assert.equal(tile('Briefcase').props['aria-pressed'], true);
+
+  const swatch = (title) => r.root.find((n) => n.props.role === 'radio' && n.props.title === title);
+  act(() => swatch('#04876A').props.onClick());
+  assert.deepEqual(rt.state.config['mailspring-modern-ui.accountIcons'], {
+    a3: { icon: 'briefcase', source: 'lucide', backgroundColor: '#04876A' },
+  });
+
+  // Preview shows the result on a piece of rail.
+  const preview = byClass(r.root, 'modern-ui-icon-editor__preview-avatar')[0];
+  assert.equal(preview.props.style.backgroundColor, '#04876A');
+
+  // Search filters both grids.
+  const search = r.root.find((n) => n.type === 'input' && n.props.type === 'search');
+  act(() => search.props.onChange({ target: { value: 'gmail' } }));
+  assert.deepEqual(
+    r.root.findAll((n) => n.props.className && String(n.props.className).startsWith('modern-ui-icon-tile') && n.type === 'button').map((n) => n.props.title),
+    ['Gmail']
+  );
+  act(() => tile('Gmail').props.onClick());
+  assert.deepEqual(rt.state.config['mailspring-modern-ui.accountIcons'].a3, {
+    icon: 'gmail',
+    source: 'simple-icons',
+    backgroundColor: '#04876A',
+  });
+
+  // Reset goes back to the automatic icon.
+  const reset = r.root.find((n) => n.type === 'button' && String(n.props.className).includes('modern-ui-icon-editor__reset'));
+  act(() => reset.props.onClick());
+  assert.deepEqual(rt.state.config['mailspring-modern-ui.accountIcons'], {});
+
+  // Selected account removed while the tab is open: selection moves on.
+  act(() => accounts()[1].props.onClick()); // a2
+  await act(async () => {
+    rt.state.accounts = rt.state.accounts.filter((a) => a.id !== 'a2');
+    rt.modules['mailspring-exports'].AccountStore.trigger();
+    await tick(5);
+  });
+  assert.equal(accounts().length, 3);
+  assert.equal(accounts()[0].props['aria-selected'], true);
+  act(() => r.unmount());
+  assert.equal(rt.modules['mailspring-exports'].AccountStore.listenerCount(), 0);
 });

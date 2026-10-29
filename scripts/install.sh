@@ -57,7 +57,7 @@ if [ "$MODE" = link ]; then
   ln -s "$(pwd)" "$TARGET"
 else
   mkdir -p "$TARGET"
-  cp -R package.json lib styles README.md LICENSE "$TARGET/"
+  cp -R package.json lib styles README.md LICENSE THIRD_PARTY_NOTICES.md "$TARGET/"
 fi
 echo "==> Installed to $TARGET"
 

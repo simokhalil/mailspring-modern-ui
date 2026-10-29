@@ -27,6 +27,7 @@ it changes.
 | `PreferencesUIStore.TabItem`, `registerPreferencesTab/unregisterPreferencesTab`, `Actions.switchPreferencesTab` | Preferences › Modern UI | `app/src/flux/stores/preferences-ui-store.ts` (also used by composer-signature, composer-templates, mcp-server) |
 | `AppEnv.config.get/set/unset/onDidChange` | Persisted, validated settings | `app/src/config.ts` |
 | `getCurrentLocale` | Plugin strings in French or English | `app/src/intl.ts` |
+| Config schema `type: 'object'` without `properties` | `accountIcons` map keyed by account id (values pass through unchanged; the plugin sanitizes them itself) | `app/src/config.ts`, object enforcer |
 
 ## Internal details relied on
 

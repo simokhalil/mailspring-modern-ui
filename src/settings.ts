@@ -26,10 +26,12 @@ export const config = {
     type: 'boolean',
     default: true,
   },
-  accountIconStyle: {
-    type: 'string',
-    default: 'auto',
-    enum: ['auto', 'provider', 'initials'],
+  // Per-account icon and color, keyed by account id; see
+  // services/account-icons.ts for the format. Without an entry an account
+  // shows its provider's logo, else its initials.
+  accountIcons: {
+    type: 'object',
+    default: {},
   },
   threadAvatars: {
     type: 'boolean',
@@ -75,6 +77,9 @@ function isValid(key: SettingKey, value: any) {
   }
   if (schema.enum) {
     return schema.enum.includes(value);
+  }
+  if (schema.type === 'object') {
+    return typeof value === 'object' && !Array.isArray(value);
   }
   return schema.type === 'boolean' ? typeof value === 'boolean' : true;
 }
