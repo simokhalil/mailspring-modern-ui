@@ -1,0 +1,82 @@
+name: Release
+
+# Pushing a tag such as v1.2.0 publishes a release; a tag containing "beta"
+# (e.g. v1.3.0-beta.1) publishes a pre-release. The tag must match the
+# "version" field of package.json.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Check that the tag matches package.json
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Clean build of lib/, LESS compiled with Mailspring's Less version,
+      # tests, and the package check (entry point, engines, licenses...).
+      - name: Build and verify
+        run: npm run verify
+
+      # lib/ is committed so the repository can be installed as is; it must be
+      # what the sources compile to.
+      - name: Check that the committed lib/ is up to date
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain -- lib)" ]; then
+            git status --short -- lib
+            echo "::error::lib/ differs from a fresh build: run 'npm run build' and commit lib/"
+            exit 1
+          fi
+
+      - name: Create the archive
+        id: archive
+        shell: bash
+        run: |
+          ARCHIVE="$(sh scripts/pack.sh --no-verify | tail -n 1)"
+          echo "Contents of $ARCHIVE:"
+          unzip -l "$ARCHIVE"
+          echo "path=$ARCHIVE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCHIVE: ${{ steps.archive.outputs.path }}
+        run: |
+          PRERELEASE=()
+          if [[ "$GITHUB_REF_NAME" == *beta* ]]; then
+            PRERELEASE=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" "$ARCHIVE" "$ARCHIVE.sha256" \
+            --title "Modern UI $GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag \
+            "${PRERELEASE[@]}"

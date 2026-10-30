@@ -209,30 +209,43 @@ export const SIMPLE_ICONS: SimpleIcon[] = ${JSON.stringify(
 fs.mkdirSync(path.join(root, 'src', 'icons'), { recursive: true });
 fs.writeFileSync(path.join(root, 'src', 'icons', 'icon-data.ts'), out);
 
-const lucideLicense = fs.readFileSync(path.join(lucideDir, 'LICENSE'), 'utf8').trim();
+// Full license texts ship with the plugin in licenses/.
+const lucideLicense = fs.readFileSync(path.join(lucideDir, 'LICENSE'), 'utf8');
+const simpleLicense = fs.readFileSync(path.join(root, 'node_modules', 'simple-icons', 'LICENSE.md'), 'utf8');
+fs.mkdirSync(path.join(root, 'licenses'), { recursive: true });
+fs.writeFileSync(path.join(root, 'licenses', 'lucide-LICENSE.txt'), lucideLicense);
+fs.writeFileSync(path.join(root, 'licenses', 'simple-icons-LICENSE.md'), simpleLicense);
+
+// Lucide's LICENSE lists the icons derived from Feather (MIT).
+const featherMatch = /derived from the Feather project:\s*\n\s*\n([^\n]+)/.exec(lucideLicense);
+const featherIds = new Set(featherMatch ? featherMatch[1].split(',').map((x) => x.trim()) : []);
+const fromFeather = lucide.filter((i) => featherIds.has(i.id)).map((i) => i.id);
+
 const notices = `# Third-party notices
 
 mailspring-modern-ui embeds a selection of icons from the projects below,
-copied at build time by \`scripts/build-icons.js\`. Nothing is downloaded at
-runtime.
+copied at build time by \`scripts/build-icons.js\` into
+\`lib/icons/icon-data.js\`. Nothing is downloaded at runtime. The full license
+texts are in the \`licenses/\` folder, distributed with the plugin.
 
 ## Lucide — ${lucide.length} icons
 
 - Source: https://lucide.dev/ (package \`lucide-static\` ${lucidePkg.version})
-- License: ISC; Lucide includes icons from Feather (MIT). Full text below.
-- Icons: ${lucide.map((i) => i.id).join(', ')}
-
-\`\`\`
-${lucideLicense}
-\`\`\`
+- License: ISC, Copyright (c) Lucide Icons and Contributors.
+  Full text: \`licenses/lucide-LICENSE.txt\`.
+- ${fromFeather.length} of the included icons are derived from Feather and are
+  also under the MIT License, Copyright (c) 2013-present Cole Bemis (same file):
+  ${fromFeather.join(', ')}.
+- Included icons: ${lucide.map((i) => i.id).join(', ')}.
 
 ## Simple Icons — ${simple.length} logos
 
 - Source: https://simpleicons.org/ (package \`simple-icons\` ${simplePkg.version})
-- License: CC0 1.0 Universal for the Simple Icons project. Individual icons may
-  carry their own license; those listed in Simple Icons' data are noted below.
+- License: CC0 1.0 Universal for the Simple Icons project.
+  Full text: \`licenses/simple-icons-LICENSE.md\`. Individual icons may carry
+  their own license; those listed in Simple Icons' data are noted below.
 - Trademarks: every logo is a trademark of its owner. They are included only so
-  you can recognise your own accounts; their use does not imply endorsement.
+  users can recognise their own accounts; their use does not imply endorsement.
   See https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md
   and each brand's guidelines.
 

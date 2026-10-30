@@ -6,7 +6,11 @@
   "description": "Airmail-inspired account rail, contact avatars, folder title and a Delete action in new-mail notifications for Mailspring.",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/simokhalil/mailspring-modern-ui.git"
+  },
+  "homepage": "https://github.com/simokhalil/mailspring-modern-ui#readme",
+  "bugs": {
+    "url": "https://github.com/simokhalil/mailspring-modern-ui/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -17,7 +21,8 @@
     "test": "npm run build && node --test test/*.test.js",
     "verify": "npm run rebuild && npm run lint:less && node --test test/*.test.js && node scripts/verify-package.js",
     "install-plugin": "sh scripts/install.sh",
-    "uninstall-plugin": "sh scripts/uninstall.sh"
+    "uninstall-plugin": "sh scripts/uninstall.sh",
+    "pack": "sh scripts/pack.sh"
   },
   "engines": {
     "mailspring": ">=1.26.0"

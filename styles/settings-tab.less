@@ -2,8 +2,31 @@
 // and rows use Mailspring's own preferences styles; only what they lack is here.
 
 .container-modern-ui {
-  max-width: 900px;
+  width: 100%;
+  min-width: 430px;
+  max-width: 860px;
   margin: 0 auto;
+
+  // Mailspring only turns .two-columns-flexbox into columns inside its own
+  // tabs (.container-general, .container-keymaps in
+  // preferences/styles/preferences.less); same rule here, including its
+  // single-column fallback for narrow windows.
+  .two-columns-flexbox {
+    display: flex;
+    align-items: flex-start;
+  }
+  @media (max-width: 680px) {
+    .two-columns-flexbox {
+      flex-direction: column;
+    }
+  }
+
+  // Full-width section under the two columns.
+  .modern-ui-account-icons-section {
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
 
   .modern-ui-settings-intro {
     margin: 0 0 18px;

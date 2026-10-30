@@ -23,6 +23,16 @@ const mainFile = path.join(root, `${pkg.main}.js`);
 check(fs.existsSync(mainFile), `entry point ${pkg.main}.js is missing: run npm run build`);
 check(fs.existsSync(path.join(root, 'styles', 'index.less')), 'styles/index.less is missing');
 
+// Everything scripts/dist-files.sh ships must exist (the icon licenses require
+// their notices to travel with the plugin).
+const distList = /DIST_FILES="([^"]+)"/.exec(fs.readFileSync(path.join(root, 'scripts', 'dist-files.sh'), 'utf8'));
+for (const entry of distList ? distList[1].split(/\s+/) : []) {
+  check(fs.existsSync(path.join(root, entry)), `${entry} is missing (listed in scripts/dist-files.sh)`);
+}
+for (const license of ['lucide-LICENSE.txt', 'simple-icons-LICENSE.md']) {
+  check(fs.existsSync(path.join(root, 'licenses', license)), `licenses/${license} is missing: run npm run icons`);
+}
+
 // Every source file has a compiled counterpart newer than it.
 const walk = (dir) =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>

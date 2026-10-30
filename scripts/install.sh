@@ -11,6 +11,7 @@
 set -eu
 
 cd "$(dirname "$0")/.."
+. scripts/dist-files.sh
 NAME="mailspring-modern-ui"
 PACKAGES_DIR="${MAILSPRING_PACKAGES_DIR:-$HOME/Library/Application Support/Mailspring/packages}"
 TARGET="$PACKAGES_DIR/$NAME"
@@ -57,7 +58,8 @@ if [ "$MODE" = link ]; then
   ln -s "$(pwd)" "$TARGET"
 else
   mkdir -p "$TARGET"
-  cp -R package.json lib styles README.md LICENSE THIRD_PARTY_NOTICES.md "$TARGET/"
+  # shellcheck disable=SC2086
+  cp -R $DIST_FILES "$TARGET/"
 fi
 echo "==> Installed to $TARGET"
 

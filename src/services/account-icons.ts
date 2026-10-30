@@ -3,7 +3,7 @@
 //
 // Stored in the plugin's config, keyed by the Mailspring account id (stable
 // across launches and reordering), e.g.
-//   { "cf55791f": { "icon": "briefcase", "source": "lucide", "backgroundColor": "#27B8C7" } }
+//   { "account-id-1": { "icon": "briefcase", "source": "lucide", "backgroundColor": "#27B8C7" } }
 // The accounts themselves are never modified.
 
 import { LUCIDE_ICONS, SIMPLE_ICONS, LucideIcon, SimpleIcon } from '../icons/icon-data';
